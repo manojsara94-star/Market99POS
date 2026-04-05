@@ -455,7 +455,7 @@ app.post('/api/invoices', async (req, res) => {
             }
         }
 
-        res.status(201).json(invoice);
+        res.status(201).json({ invoice });
         
         // Update product stock manually in series or parallel
         for (const item of items) {
