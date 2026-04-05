@@ -125,6 +125,8 @@ let currentTab = 'dashboard-view';
 let chartInstance = null;
 let currentProductImageBase64 = null;
 let notifiedLowStockProducts = new Set();
+let currentPOSCategory = 'All';
+let customersList = [];
 
 // ==== DOM ELEMENTS ====
 const clockEl = document.getElementById('clock');
@@ -618,6 +620,21 @@ async function loadPOS() {
         const res = await fetchAuth(`${API_BASE}/products`);
         products = await res.json();
         checkLowStockAlerts(products);
+        const cRes = await fetchAuth(`${API_BASE}/customers`);
+        customersList = await cRes.json();
+
+        const cList = document.getElementById('pos-customer-list');
+        cList.innerHTML = '';
+        customersList.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.name;
+            cList.appendChild(opt);
+        });
+
+        document.getElementById('pos-customer-name').value = '';
+        document.getElementById('pos-customer-contact').value = '';
+        document.getElementById('pos-customer-address').value = '';
+
         renderPOSProducts(products);
     } catch (err) {
         console.error(err);
@@ -647,6 +664,15 @@ document.getElementById('pos-search-input').addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
     const filtered = products.filter(p => p.name.toLowerCase().includes(term));
     renderPOSProducts(filtered);
+});
+
+document.getElementById('pos-customer-name').addEventListener('input', (e) => {
+    const val = e.target.value;
+    const existing = customersList.find(c => c.name === val);
+    if (existing) {
+        document.getElementById('pos-customer-contact').value = existing.contact || '';
+        document.getElementById('pos-customer-address').value = existing.address || '';
+    }
 });
 
 function addToBill(product) {
@@ -755,10 +781,17 @@ async function submitCurrentBill(autoPrint) {
     let total = currentBill.reduce((sum, item) => sum + ((item.price * item.quantity) - (item.discount || 0)), 0);
     let totalDiscount = currentBill.reduce((sum, item) => sum + (item.discount || 0), 0);
 
+    const customerName = document.getElementById('pos-customer-name').value.trim();
+    const customerContact = document.getElementById('pos-customer-contact').value.trim();
+    const customerAddress = document.getElementById('pos-customer-address').value.trim();
+
     const payload = {
         items: currentBill,
         total_amount: total,
-        total_discount: totalDiscount
+        total_discount: totalDiscount,
+        customer_name: customerName,
+        customer_contact: customerContact,
+        customer_address: customerAddress
     };
 
     try {
@@ -798,6 +831,26 @@ function showInvoicePrintout(invoice, autoPrint = true) {
     document.getElementById('receipt-no').textContent = invoice.invoice_number;
     document.getElementById('receipt-date').textContent = invoice.date;
     document.getElementById('receipt-time').textContent = invoice.time;
+
+    const receiptCustBox = document.getElementById('receipt-customer-info');
+    if (invoice.customer_name) {
+        receiptCustBox.style.display = 'block';
+        document.getElementById('receipt-customer-name').textContent = invoice.customer_name;
+
+        const contactRow = document.getElementById('receipt-customer-contact-row');
+        if (invoice.customer_contact) {
+            contactRow.style.display = 'inline';
+            document.getElementById('receipt-customer-contact').textContent = invoice.customer_contact;
+        } else { contactRow.style.display = 'none'; }
+
+        const addressRow = document.getElementById('receipt-customer-address-row');
+        if (invoice.customer_address) {
+            addressRow.style.display = 'inline';
+            document.getElementById('receipt-customer-address').textContent = invoice.customer_address;
+        } else { addressRow.style.display = 'none'; }
+    } else {
+        receiptCustBox.style.display = 'none';
+    }
 
     const tbody = document.querySelector('#receipt-items tbody');
     tbody.innerHTML = '';

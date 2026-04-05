@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { connectDB, initializeDatabase, User, Product, Invoice, Category } = require('./database');
+const { connectDB, initializeDatabase, User, Product, Invoice, Category, Customer } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -246,6 +246,16 @@ app.delete('/api/categories/:id', async (req, res) => {
     }
 });
 
+app.get('/api/customers', async (req, res) => {
+    try {
+        const queryFilter = req.user.role === 'admin' ? {} : { user_id: req.user._id };
+        const customers = await Customer.find(queryFilter).sort({ name: 1 });
+        res.json(customers);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
 // ==== INVENTORY (PRODUCTS) API ====
 
 app.get('/api/products', async (req, res) => {
@@ -386,7 +396,7 @@ app.get('/api/invoices/:id', async (req, res) => {
 });
 
 app.post('/api/invoices', async (req, res) => {
-    const { items, total_amount, total_discount } = req.body;
+    const { items, total_amount, total_discount, customer_name, customer_contact, customer_address } = req.body;
     if (!items || items.length === 0) {
         return res.status(400).json({ error: 'Invoice must have items' });
     }
@@ -423,11 +433,29 @@ app.post('/api/invoices', async (req, res) => {
             invoice_number,
             date,
             time,
+            customer_name: customer_name || '',
+            customer_contact: customer_contact || '',
+            customer_address: customer_address || '',
             total_amount,
             total_discount: total_discount || 0,
             total_profit,
             items: formattedItems
         });
+
+        // Auto-save the customer profile for next uses if name is given
+        if (customer_name) {
+            const queryConf = { user_id: req.user._id, name: customer_name };
+            if (customer_contact) queryConf.contact = customer_contact;
+            const existingCustomer = await Customer.findOne(queryConf);
+            if (!existingCustomer) {
+                await Customer.create({ user_id: req.user._id, name: customer_name, contact: customer_contact || '', address: customer_address || '' });
+            } else if (customer_address && !existingCustomer.address) {
+                existingCustomer.address = customer_address;
+                await existingCustomer.save();
+            }
+        }
+
+        res.status(201).json(invoice);
         
         // Update product stock manually in series or parallel
         for (const item of items) {
