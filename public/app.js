@@ -174,6 +174,7 @@ function setupNavigation() {
             // Load specific view data
             if (target === 'dashboard-view') loadDashboard();
             if (target === 'inventory-view') loadInventory();
+            if (target === 'customers-view') loadCustomers();
             if (target === 'pos-view') loadPOS();
             if (target === 'invoices-view') loadInvoices();
             if (target === 'reports-view') loadReports();
@@ -220,6 +221,7 @@ function setupModals() {
     document.getElementById('btn-close-invoice-modal').addEventListener('click', hideModal);
     document.getElementById('btn-close-admin-modal').addEventListener('click', hideModal);
     document.getElementById('btn-close-category-modal').addEventListener('click', hideModal);
+    document.getElementById('btn-close-customer-modal').addEventListener('click', hideModal);
 
     // Add product
     document.getElementById('btn-add-product').addEventListener('click', () => {
@@ -232,7 +234,15 @@ function setupModals() {
         currentProductImageBase64 = null;
         document.getElementById('product-image-preview').innerHTML = '<span style="color:var(--text-muted);font-size:12px;">+ Add Image</span>';
         document.getElementById('product-modal-title').textContent = 'Add Product';
-        showModal(productModal);
+        showModal(document.getElementById('product-modal'));
+    });
+
+    // Add customer
+    document.getElementById('btn-add-customer').addEventListener('click', () => {
+        document.getElementById('customer-form').reset();
+        document.getElementById('customer-id').value = '';
+        document.getElementById('customer-modal-title').textContent = 'Add Customer';
+        showModal(document.getElementById('customer-modal'));
     });
 
     // Handle Image Selection
@@ -315,6 +325,32 @@ function setupModals() {
         }
     });
 
+    // Handle Customer Form
+    document.getElementById('customer-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('customer-id').value;
+        const name = document.getElementById('customer-name').value;
+        const contact = document.getElementById('customer-contact').value;
+        const address = document.getElementById('customer-address').value;
+
+        const payload = { name, contact, address };
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `${API_BASE}/customers/${id}` : `${API_BASE}/customers`;
+
+        try {
+            await fetchAuth(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            hideModal();
+            loadCustomers();
+        } catch (err) {
+            console.error(err);
+            alert('Error saving customer');
+        }
+    });
+
     // Handle Category Modal
     document.getElementById('btn-manage-categories').addEventListener('click', (e) => {
         e.preventDefault();
@@ -371,7 +407,68 @@ function setupModals() {
     });
 }
 
-// ==== UTILS ====
+// ==== CUSTOMERS ====
+async function loadCustomers() {
+    try {
+        const res = await fetchAuth(`${API_BASE}/customers`);
+        customersList = await res.json();
+        const tbody = document.querySelector('#customers-table tbody');
+        tbody.innerHTML = '';
+
+        customersList.forEach(c => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${c.name}</td>
+                <td>${c.contact || '-'}</td>
+                <td>${c.address || '-'}</td>
+                <td>
+                    <button class="btn btn-outline btn-icon-only edit-cust-btn" data-id="${c._id || c.id}"><i class='bx bx-edit'></i></button>
+                    <button class="btn btn-danger btn-icon-only del-cust-btn" data-id="${c._id || c.id}"><i class='bx bx-trash'></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// Customer table actions
+document.querySelector('#customers-table tbody').addEventListener('click', (e) => {
+    const editBtn = e.target.closest('.edit-cust-btn');
+    if (editBtn) {
+        const id = editBtn.dataset.id;
+        const cust = customersList.find(c => (c._id || c.id) == id);
+        if (cust) {
+            document.getElementById('customer-id').value = id;
+            document.getElementById('customer-name').value = cust.name;
+            document.getElementById('customer-contact').value = cust.contact || '';
+            document.getElementById('customer-address').value = cust.address || '';
+            document.getElementById('customer-modal-title').textContent = 'Edit Customer';
+            showModal(document.getElementById('customer-modal'));
+        }
+        return;
+    }
+
+    const delBtn = e.target.closest('.del-cust-btn');
+    if (delBtn) {
+        deleteCustomer(delBtn.dataset.id);
+    }
+});
+
+async function deleteCustomer(id) {
+    if (confirm('Are you sure you want to delete this customer profile?')) {
+        try {
+            await fetchAuth(`${API_BASE}/customers/${id}`, { method: 'DELETE' });
+            loadCustomers();
+        } catch (err) {
+            console.error(err);
+            alert('Error deleting customer');
+        }
+    }
+}
+
+// ==== POS ====
 function formatCurrency(amount) {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'LKR' }).format(amount).replace('LKR', 'Rs.');
 }

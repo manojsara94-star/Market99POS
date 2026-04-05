@@ -256,6 +256,44 @@ app.get('/api/customers', async (req, res) => {
     }
 });
 
+app.post('/api/customers', async (req, res) => {
+    const { name, contact, address } = req.body;
+    if (!name) return res.status(400).json({ error: 'Name is required' });
+    try {
+        const customer = await Customer.create({ user_id: req.user._id, name, contact, address });
+        res.status(201).json(customer);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/customers/:id', async (req, res) => {
+    const { name, contact, address } = req.body;
+    try {
+        const queryFilter = req.user.role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, user_id: req.user._id };
+        const customer = await Customer.findOneAndUpdate(
+            queryFilter,
+            { name, contact, address },
+            { new: true }
+        );
+        if (!customer) return res.status(404).json({ error: 'Customer not found' });
+        res.json(customer);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/customers/:id', async (req, res) => {
+    try {
+        const queryFilter = req.user.role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, user_id: req.user._id };
+        const customer = await Customer.findOneAndDelete(queryFilter);
+        if (!customer) return res.status(404).json({ error: 'Customer not found' });
+        res.json({ message: 'Customer deleted successfully' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
 // ==== INVENTORY (PRODUCTS) API ====
 
 app.get('/api/products', async (req, res) => {

@@ -89,8 +89,14 @@
                 </li>
                 <li>
                     <a href="#" class="nav-link" data-target="inventory-view">
-                        <i class='bx bx-box icon'></i>
+                        <i class='bx bx-package icon'></i>
                         <span class="link-name">Inventory</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="nav-link" data-target="customers-view">
+                        <i class='bx bx-group icon'></i>
+                        <span class="link-name">Customers</span>
                     </a>
                 </li>
                 <li>
@@ -312,6 +318,35 @@
                                         <th>Category</th>
                                         <th>Cost</th>
                                         <th>Price</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Customers View -->
+                <section id="customers-view" class="view">
+                    <div class="view-header">
+                        <h2>Customers Database</h2>
+                        <div class="header-actions">
+                            <button class="btn btn-primary" id="btn-add-customer">
+                                <i class='bx bx-plus'></i> Add Customer
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-card">
+                        <div class="table-responsive">
+                            <table class="data-table" id="customers-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Contact No</th>
+                                        <th>Address</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -570,6 +605,32 @@
                             <input type="text" id="new-category-name" class="form-control" required>
                         </div>
                         <button type="submit" class="btn btn-primary btn-block">Save Category</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Customer Modal -->
+            <div class="modal" id="customer-modal" style="max-width:450px;">
+                <div class="modal-header">
+                    <h3 id="customer-modal-title">Add Customer</h3>
+                    <button class="close-btn" id="btn-close-customer-modal"><i class='bx bx-x'></i></button>
+                </div>
+                <div class="modal-body">
+                    <form id="customer-form">
+                        <input type="hidden" id="customer-id">
+                        <div class="form-group">
+                            <label>Name</label>
+                            <input type="text" id="customer-name" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Contact No</label>
+                            <input type="text" id="customer-contact" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Address</label>
+                            <textarea id="customer-address" class="form-control" rows="3"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Save Customer</button>
                     </form>
                 </div>
             </div>
