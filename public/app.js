@@ -200,6 +200,8 @@ function setupModals() {
     document.getElementById('btn-add-product').addEventListener('click', () => {
         document.getElementById('product-form').reset();
         document.getElementById('product-id').value = '';
+        document.getElementById('product-description').value = '';
+        document.getElementById('product-cost').value = '';
         currentProductImageBase64 = null;
         document.getElementById('product-image-preview').innerHTML = '<span style="color:var(--text-muted);font-size:12px;">+ Add Image</span>';
         document.getElementById('product-modal-title').textContent = 'Add Product';
@@ -252,12 +254,16 @@ function setupModals() {
         e.preventDefault();
         const id = document.getElementById('product-id').value;
         const name = document.getElementById('product-name').value;
+        const description = document.getElementById('product-description').value;
         const qty = document.getElementById('product-qty').value;
+        const cost = document.getElementById('product-cost').value;
         const price = document.getElementById('product-price').value;
 
         const payload = {
             name,
+            description,
             quantity: parseInt(qty),
+            cost: parseFloat(cost),
             price: parseFloat(price),
             image: currentProductImageBase64
         };
@@ -366,6 +372,8 @@ async function loadDashboard() {
         document.getElementById('dash-bills-month').textContent = stats.totalBillsMonth;
         document.getElementById('dash-income-today').textContent = formatCurrency(stats.dailyIncome);
         document.getElementById('dash-income-month').textContent = formatCurrency(stats.monthlyIncome);
+        document.getElementById('dash-profit-today').textContent = formatCurrency(stats.dailyProfit);
+        document.getElementById('dash-profit-month').textContent = formatCurrency(stats.monthlyProfit);
         document.getElementById('dash-total-products').textContent = stats.totalProducts;
         document.getElementById('dash-low-stock').textContent = stats.lowStockProducts;
 
@@ -427,6 +435,7 @@ async function loadInventory() {
             tr.innerHTML = `
                 <td style="display:flex;align-items:center;gap:12px;">${imgHtml} ${nameDisplay}</td>
                 <td class="${p.quantity <= 10 ? 'text-danger' : ''}">${p.quantity}</td>
+                <td>${formatCurrency(p.cost || 0)}</td>
                 <td>${formatCurrency(p.price)}</td>
                 <td>
                     <button class="btn btn-outline btn-icon-only edit-btn" data-id="${p.id}"><i class='bx bx-edit'></i></button>
@@ -465,7 +474,9 @@ function editProduct(id) {
     if (p) {
         document.getElementById('product-id').value = p.id;
         document.getElementById('product-name').value = p.name;
+        document.getElementById('product-description').value = p.description || '';
         document.getElementById('product-qty').value = p.quantity;
+        document.getElementById('product-cost').value = p.cost || 0;
         document.getElementById('product-price').value = p.price;
 
         currentProductImageBase64 = p.image || null;
@@ -490,8 +501,8 @@ async function deleteProduct(id) {
 }
 
 document.getElementById('btn-export-inventory').addEventListener('click', () => {
-    const csvData = [['Item Name', 'Quantity', 'Price']];
-    products.forEach(p => csvData.push([p.name, p.quantity, p.price]));
+    const csvData = [['Item Name', 'Quantity', 'Cost', 'Price']];
+    products.forEach(p => csvData.push([p.name, p.quantity, p.cost || 0, p.price]));
     exportToCSV('products.csv', csvData);
 });
 
@@ -552,6 +563,7 @@ function addToBill(product) {
         currentBill.push({
             id: product.id,
             name: product.name,
+            cost: product.cost || 0,
             price: product.price,
             quantity: 1,
             maxQty: product.quantity
@@ -784,21 +796,21 @@ async function loadReports() {
 
     try {
         if (currentReportMode === 'sales') {
-            thead.innerHTML = `<tr><th>Date</th><th>Total Sales</th></tr>`;
+            thead.innerHTML = `<tr><th>Date</th><th>Total Sales</th><th>Total Profit</th></tr>`;
             const res = await fetchAuth(`${API_BASE}/reports/sales`);
             const data = await res.json();
             data.forEach(row => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${row.date}</td><td>${formatCurrency(row.total_sales)}</td>`;
+                tr.innerHTML = `<td>${row.date}</td><td>${formatCurrency(row.total_sales)}</td><td style="color:var(--success);font-weight:bold;">${formatCurrency(row.total_profit)}</td>`;
                 tbody.appendChild(tr);
             });
         } else {
-            thead.innerHTML = `<tr><th>Product Name</th><th>Quantity Sold</th><th>Revenue</th></tr>`;
+            thead.innerHTML = `<tr><th>Product Name</th><th>Quantity Sold</th><th>Revenue</th><th>Profit</th></tr>`;
             const res = await fetchAuth(`${API_BASE}/reports/product-sales`);
             const data = await res.json();
             data.forEach(row => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${row.product_name}</td><td>${row.quantity_sold}</td><td>${formatCurrency(row.revenue)}</td>`;
+                tr.innerHTML = `<td>${row.product_name}</td><td>${row.quantity_sold}</td><td>${formatCurrency(row.revenue)}</td><td style="color:var(--success);font-weight:bold;">${formatCurrency(row.profit)}</td>`;
                 tbody.appendChild(tr);
             });
         }
