@@ -118,7 +118,21 @@ async function fetchAuth(url, options = {}) {
     return res;
 }
 
-// ==== STATE ====
+function showModal(modalElem) {
+    if (!modalElem) return;
+    modalOverlay.classList.add('active');
+    // Hide all internal modals first
+    const internalModals = modalOverlay.querySelectorAll('.modal');
+    internalModals.forEach(m => m.classList.remove('active'));
+    // Show target
+    modalElem.classList.add('active');
+}
+
+function hideModal() {
+    modalOverlay.classList.remove('active');
+}
+
+// ==== UTILS ====
 let products = [];
 let currentBill = [];
 let currentTab = 'dashboard-view';
