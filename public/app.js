@@ -105,6 +105,11 @@ async function fetchAuth(url, options = {}) {
     }
     options.headers = headers;
 
+    // Explicitly bypass browser cache for dynamic API calls
+    if (!options.method || options.method.toUpperCase() === 'GET') {
+        options.cache = 'no-store';
+    }
+
     const res = await fetch(url, options);
     if (res.status === 401) {
         // Unauthorized, logout
