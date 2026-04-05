@@ -198,15 +198,10 @@ function setupNavigation() {
 
 function setupModals() {
     const adminModal = document.getElementById('admin-user-modal');
-    const categoryModalOverlay = document.getElementById('category-modal-overlay');
 
     window.showModal = function (m) {
-        if (m === categoryModalOverlay) {
-            m.classList.add('active');
-        } else {
-            document.getElementById('modal-overlay').classList.add('active');
-            m.classList.add('active');
-        }
+        document.getElementById('modal-overlay').classList.add('active');
+        m.classList.add('active');
     };
 
     window.hideModal = function () {
@@ -214,14 +209,10 @@ function setupModals() {
         document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
     };
 
-    window.hideCategoryModal = function () {
-        categoryModalOverlay.classList.remove('active');
-    };
-
     document.getElementById('btn-close-modal').addEventListener('click', hideModal);
     document.getElementById('btn-close-invoice-modal').addEventListener('click', hideModal);
     document.getElementById('btn-close-admin-modal').addEventListener('click', hideModal);
-    document.getElementById('btn-close-category-modal').addEventListener('click', hideCategoryModal);
+    document.getElementById('btn-close-category-modal').addEventListener('click', hideModal);
 
     // Add product
     document.getElementById('btn-add-product').addEventListener('click', () => {
@@ -320,8 +311,9 @@ function setupModals() {
     // Handle Category Modal
     document.getElementById('btn-manage-categories').addEventListener('click', (e) => {
         e.preventDefault();
+        hideModal(); // hide product modal first if it is open
         document.getElementById('category-form').reset();
-        showModal(document.getElementById('category-modal-overlay'));
+        showModal(document.getElementById('category-modal'));
     });
 
     document.getElementById('category-form').addEventListener('submit', async (e) => {
@@ -333,8 +325,9 @@ function setupModals() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name })
             });
-            hideCategoryModal();
+            hideModal();
             loadCategories();
+            showModal(document.getElementById('product-modal')); // jump back
         } catch (err) {
             console.error(err);
             alert('Error creating category');
@@ -808,12 +801,19 @@ function showInvoicePrintout(invoice, autoPrint = true) {
         const itemDiscount = item.discount || 0;
         const amt = (item.price * item.quantity) - itemDiscount;
         total += amt;
+        let discountNote = '';
+        if (itemDiscount > 0) {
+            discountNote = `<div style="font-size: 10px; color: #555;">Disc: -Rs.${parseFloat(itemDiscount).toFixed(2)}</div>`;
+        }
         const tr = document.createElement('tr');
         tr.innerHTML = `
-            <td>${item.product_name || item.name}</td>
+            <td>
+                <div>${item.product_name || item.name}</div>
+                ${discountNote}
+            </td>
             <td>${item.quantity}</td>
             <td>${item.price}</td>
-            <td>${amt}</td>
+            <td>${parseFloat(amt).toFixed(2)}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -821,12 +821,12 @@ function showInvoicePrintout(invoice, autoPrint = true) {
     const discountRow = document.getElementById('receipt-discount-row');
     if (invoice.total_discount > 0) {
         discountRow.style.display = 'flex';
-        document.getElementById('receipt-total-discount').textContent = invoice.total_discount.toFixed(2);
+        document.getElementById('receipt-total-discount').textContent = 'Rs. ' + parseFloat(invoice.total_discount).toFixed(2);
     } else {
         discountRow.style.display = 'none';
     }
 
-    document.getElementById('receipt-total-amount').textContent = total.toFixed(2);
+    document.getElementById('receipt-total-amount').textContent = 'Rs. ' + parseFloat(total).toFixed(2);
 
     // Automatically open modal and print dialog as per rules
     showModal(invoiceModal);
