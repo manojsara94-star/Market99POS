@@ -326,7 +326,8 @@ function setupModals() {
                 body: JSON.stringify({ name })
             });
             hideModal();
-            loadCategories();
+            await loadCategories();
+            document.getElementById('product-category').value = name;
             showModal(document.getElementById('product-modal')); // jump back
         } catch (err) {
             console.error(err);
