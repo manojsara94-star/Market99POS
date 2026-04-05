@@ -77,10 +77,12 @@ function renderProducts(products) {
                 imgHTML = `<div class="product-image"><i class='bx bx-image'></i></div>`;
             }
             
+            const descHtml = p.description ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${p.description}</div>` : '';
             card.innerHTML = `
                 ${imgHTML}
                 <div class="product-details">
                     <div class="product-name">${p.name}</div>
+                    ${descHtml}
                     <div class="product-price">${formatCurrency(p.price)}</div>
                 </div>
             `;

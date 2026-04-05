@@ -25,7 +25,7 @@ loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
-    
+
     try {
         const res = await fetch(`${API_BASE}/auth/login`, {
             method: 'POST',
@@ -33,10 +33,10 @@ loginForm.addEventListener('submit', async (e) => {
             body: JSON.stringify({ email, password })
         });
         const data = await res.json();
-        if(!res.ok) throw new Error(data.error || 'Login failed');
-        
+        if (!res.ok) throw new Error(data.error || 'Login failed');
+
         loginSuccess(data.token, data.business_name, data.role);
-    } catch(err) { alert(err.message); }
+    } catch (err) { alert(err.message); }
 });
 
 registerForm.addEventListener('submit', async (e) => {
@@ -45,7 +45,7 @@ registerForm.addEventListener('submit', async (e) => {
     const password = document.getElementById('reg-password').value;
     const business_name = document.getElementById('reg-businessName').value;
     const whatsapp_number = document.getElementById('reg-whatsapp').value;
-    
+
     try {
         const res = await fetch(`${API_BASE}/auth/register`, {
             method: 'POST',
@@ -53,10 +53,10 @@ registerForm.addEventListener('submit', async (e) => {
             body: JSON.stringify({ email, password, business_name, whatsapp_number })
         });
         const data = await res.json();
-        if(!res.ok) throw new Error(data.error || 'Registration failed');
-        
+        if (!res.ok) throw new Error(data.error || 'Registration failed');
+
         loginSuccess(data.token, data.business_name, data.role);
-    } catch(err) { alert(err.message); }
+    } catch (err) { alert(err.message); }
 });
 
 function loginSuccess(token, businessName, role = 'user') {
@@ -83,13 +83,13 @@ function checkAuth() {
     if (authToken) {
         authOverlay.classList.remove('active');
         document.getElementById('business-name-display').textContent = currentBusiness;
-        
+
         if (currentRole === 'admin') {
             document.getElementById('nav-item-admin').style.display = 'block';
         } else {
             document.getElementById('nav-item-admin').style.display = 'none';
         }
-        
+
         // Re-initialize data
         loadDashboard();
     } else {
@@ -104,7 +104,7 @@ async function fetchAuth(url, options = {}) {
         headers['Authorization'] = `Bearer ${authToken}`;
     }
     options.headers = headers;
-    
+
     const res = await fetch(url, options);
     if (res.status === 401) {
         // Unauthorized, logout
@@ -135,7 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAuth();
     updateClock();
     setInterval(updateClock, 1000);
-    
+
     setupNavigation();
     setupModals();
 });
@@ -151,24 +151,24 @@ function setupNavigation() {
             e.preventDefault();
             navLinks.forEach(l => l.classList.remove('active'));
             link.classList.add('active');
-            
+
             const target = link.getAttribute('data-target');
             views.forEach(view => view.classList.remove('active'));
             document.getElementById(target).classList.add('active');
-            
+
             pageTitle.textContent = link.querySelector('.link-name').textContent;
             currentTab = target;
-            
+
             // Load specific view data
-            if(target === 'dashboard-view') loadDashboard();
-            if(target === 'inventory-view') loadInventory();
-            if(target === 'pos-view') loadPOS();
-            if(target === 'invoices-view') loadInvoices();
-            if(target === 'reports-view') loadReports();
-            if(target === 'admin-view') loadAdminUsers();
+            if (target === 'dashboard-view') loadDashboard();
+            if (target === 'inventory-view') loadInventory();
+            if (target === 'pos-view') loadPOS();
+            if (target === 'invoices-view') loadInvoices();
+            if (target === 'reports-view') loadReports();
+            if (target === 'admin-view') loadAdminUsers();
         });
     });
-    
+
     // ==== MARKETPLACE ====
     const btnMarketplace = document.getElementById('btn-create-marketplace');
     if (btnMarketplace) {
@@ -195,7 +195,7 @@ function setupModals() {
     document.getElementById('btn-close-modal').addEventListener('click', hideModal);
     document.getElementById('btn-close-invoice-modal').addEventListener('click', hideModal);
     document.getElementById('btn-close-admin-modal').addEventListener('click', hideModal);
-    
+
     // Add product
     document.getElementById('btn-add-product').addEventListener('click', () => {
         document.getElementById('product-form').reset();
@@ -207,14 +207,14 @@ function setupModals() {
     });
 
     // Handle Image Selection
-    document.getElementById('product-image').addEventListener('change', function(e) {
+    document.getElementById('product-image').addEventListener('change', function (e) {
         const file = e.target.files[0];
         if (!file) return;
-        
+
         const reader = new FileReader();
-        reader.onload = function(event) {
+        reader.onload = function (event) {
             const img = new Image();
-            img.onload = function() {
+            img.onload = function () {
                 const canvas = document.createElement('canvas');
                 const MAX_WIDTH = 400;
                 const MAX_HEIGHT = 400;
@@ -254,16 +254,16 @@ function setupModals() {
         const name = document.getElementById('product-name').value;
         const qty = document.getElementById('product-qty').value;
         const price = document.getElementById('product-price').value;
-        
-        const payload = { 
-            name, 
-            quantity: parseInt(qty), 
+
+        const payload = {
+            name,
+            quantity: parseInt(qty),
             price: parseFloat(price),
             image: currentProductImageBase64
         };
         const method = id ? 'PUT' : 'POST';
         const url = id ? `${API_BASE}/products/${id}` : `${API_BASE}/products`;
-        
+
         try {
             await fetchAuth(url, {
                 method,
@@ -282,7 +282,7 @@ function setupModals() {
     document.getElementById('btn-print-receipt').addEventListener('click', () => {
         window.print();
     });
-    
+
     // Admin User Edit Form
     document.getElementById('admin-user-form').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -291,7 +291,7 @@ function setupModals() {
         const email = document.getElementById('admin-email').value;
         const whatsapp_number = document.getElementById('admin-whatsapp').value;
         const marketplace_enabled = document.getElementById('admin-marketplace-enabled').checked;
-        
+
         try {
             await fetchAuth(`${API_BASE}/admin/users/${id}`, {
                 method: 'PUT',
@@ -324,7 +324,7 @@ function formatCurrency(amount) {
 }
 
 function exportToCSV(filename, rows) {
-    let processRow = function(row) {
+    let processRow = function (row) {
         let finalVal = '';
         for (let j = 0; j < row.length; j++) {
             let innerValue = row[j] === null ? '' : row[j].toString();
@@ -361,7 +361,7 @@ async function loadDashboard() {
     try {
         const res = await fetchAuth(`${API_BASE}/dashboard`);
         const stats = await res.json();
-        
+
         document.getElementById('dash-bills-today').textContent = stats.totalBillsToday;
         document.getElementById('dash-bills-month').textContent = stats.totalBillsMonth;
         document.getElementById('dash-income-today').textContent = formatCurrency(stats.dailyIncome);
@@ -374,14 +374,14 @@ async function loadDashboard() {
         const alerts = await resAlerts.json();
         const tbody = document.querySelector('#low-stock-table tbody');
         tbody.innerHTML = '';
-        
+
         alerts.forEach(item => {
             const tr = document.createElement('tr');
             let nameHTML = `<td>${item.name}</td>`;
             if (currentRole === 'admin') {
                 nameHTML = `<td>${item.name} <div style="font-size:11px;color:var(--primary);margin-top:2px;">[${item.owner_name}]</div></td>`;
             }
-            
+
             tr.innerHTML = `
                 ${nameHTML}
                 <td class="text-danger">${item.quantity}</td>
@@ -403,7 +403,7 @@ async function loadInventory() {
         products = await res.json();
         const tbody = document.querySelector('#inventory-table tbody');
         tbody.innerHTML = '';
-        
+
         // Handle admin inventory filtering
         let productsToRender = products;
         const filterBadge = document.getElementById('inventory-filter-badge');
@@ -414,16 +414,16 @@ async function loadInventory() {
         } else {
             filterBadge.style.display = 'none';
         }
-        
+
         productsToRender.forEach(p => {
             const imgHtml = p.image ? `<img src="${p.image}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;">` : `<div style="width:40px;height:40px;border-radius:8px;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#64748b;">No Img</div>`;
             const tr = document.createElement('tr');
-            
+
             let nameDisplay = `<span>${p.name}</span>`;
             if (currentRole === 'admin') {
                 nameDisplay = `<div><span>${p.name}</span><div style="font-size:11px;color:var(--primary);margin-top:2px;">[${p.owner_name}]</div></div>`;
             }
-            
+
             tr.innerHTML = `
                 <td style="display:flex;align-items:center;gap:12px;">${imgHtml} ${nameDisplay}</td>
                 <td class="${p.quantity <= 10 ? 'text-danger' : ''}">${p.quantity}</td>
@@ -435,7 +435,7 @@ async function loadInventory() {
             `;
             tbody.appendChild(tr);
         });
-        
+
     } catch (err) {
         console.error(err);
     }
@@ -453,7 +453,7 @@ document.querySelector('#inventory-table tbody').addEventListener('click', (e) =
         editProduct(editBtn.dataset.id);
         return;
     }
-    
+
     const delBtn = e.target.closest('.del-btn');
     if (delBtn) {
         deleteProduct(delBtn.dataset.id);
@@ -462,26 +462,26 @@ document.querySelector('#inventory-table tbody').addEventListener('click', (e) =
 
 function editProduct(id) {
     const p = products.find(prod => prod.id == id);
-    if(p) {
+    if (p) {
         document.getElementById('product-id').value = p.id;
         document.getElementById('product-name').value = p.name;
         document.getElementById('product-qty').value = p.quantity;
         document.getElementById('product-price').value = p.price;
-        
+
         currentProductImageBase64 = p.image || null;
         if (p.image) {
             document.getElementById('product-image-preview').innerHTML = `<img src="${p.image}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`;
         } else {
             document.getElementById('product-image-preview').innerHTML = '<span style="color:var(--text-muted);font-size:12px;">+ Add Image</span>';
         }
-        
+
         document.getElementById('product-modal-title').textContent = 'Edit Product';
         showModal(productModal);
     }
 }
 
 async function deleteProduct(id) {
-    if(confirm('Are you sure you want to delete this product?')) {
+    if (confirm('Are you sure you want to delete this product?')) {
         try {
             await fetchAuth(`${API_BASE}/products/${id}`, { method: 'DELETE' });
             loadInventory();
@@ -500,7 +500,7 @@ async function loadPOS() {
     currentBill = [];
     updateBillUI();
     document.getElementById('pos-search-input').value = '';
-    
+
     try {
         const res = await fetchAuth(`${API_BASE}/products`);
         products = await res.json();
@@ -513,7 +513,7 @@ async function loadPOS() {
 function renderPOSProducts(productArray) {
     const grid = document.getElementById('pos-products-grid');
     grid.innerHTML = '';
-    
+
     productArray.forEach(p => {
         const div = document.createElement('div');
         div.className = 'pos-product-card';
@@ -540,12 +540,12 @@ function addToBill(product) {
         alert('Product out of stock!');
         return;
     }
-    
+
     const existing = currentBill.find(item => item.id === product.id);
     if (existing) {
         if (existing.quantity >= product.quantity) {
-             alert('Cannot add more than available stock!');
-             return;
+            alert('Cannot add more than available stock!');
+            return;
         }
         existing.quantity++;
     } else {
@@ -569,7 +569,7 @@ function updateBillQuantity(id, change) {
         } else if (newQty === 0) {
             currentBill = currentBill.filter(i => i.id !== id);
         } else {
-             alert('Cannot exceed available stock!');
+            alert('Cannot exceed available stock!');
         }
         updateBillUI();
     }
@@ -579,11 +579,11 @@ function updateBillUI() {
     const itemsContainer = document.getElementById('pos-bill-items');
     itemsContainer.innerHTML = '';
     let total = 0;
-    
+
     currentBill.forEach(item => {
         const amount = item.price * item.quantity;
         total += amount;
-        
+
         const div = document.createElement('div');
         div.className = 'bill-item';
         div.innerHTML = `
@@ -602,7 +602,7 @@ function updateBillUI() {
         `;
         itemsContainer.appendChild(div);
     });
-    
+
     document.getElementById('pos-total-amount').textContent = formatCurrency(total);
 }
 
@@ -611,35 +611,35 @@ document.getElementById('btn-submit-bill').addEventListener('click', async () =>
         alert('Bill is empty!');
         return;
     }
-    
+
     let total = currentBill.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    
+
     const payload = {
         items: currentBill,
         total_amount: total
     };
-    
+
     try {
         const res = await fetchAuth(`${API_BASE}/invoices`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        
+
         if (!res.ok) throw new Error('Failed to create invoice');
-        
+
         const data = await res.json();
-        
+
         // Print
         showInvoicePrintout(data.invoice);
-        
+
         // Clear bill
         currentBill = [];
         updateBillUI();
-        
+
         // Reload products cache
         fetchAuth(`${API_BASE}/products`).then(r => r.json()).then(p => products = p);
-        
+
     } catch (err) {
         console.error(err);
         alert('Error saving bill');
@@ -650,10 +650,10 @@ function showInvoicePrintout(invoice) {
     document.getElementById('receipt-no').textContent = invoice.invoice_number;
     document.getElementById('receipt-date').textContent = invoice.date;
     document.getElementById('receipt-time').textContent = invoice.time;
-    
+
     const tbody = document.querySelector('#receipt-items tbody');
     tbody.innerHTML = '';
-    
+
     let total = 0;
     invoice.items.forEach(item => {
         const amt = item.price * item.quantity;
@@ -667,9 +667,9 @@ function showInvoicePrintout(invoice) {
         `;
         tbody.appendChild(tr);
     });
-    
+
     document.getElementById('receipt-total-amount').textContent = total.toFixed(2);
-    
+
     // Automatically open modal and print dialog as per rules
     showModal(invoiceModal);
     setTimeout(() => {
@@ -683,17 +683,17 @@ let invoicesList = [];
 async function loadInvoices() {
     const dateFilter = document.getElementById('filter-date').value;
     const monthFilter = document.getElementById('filter-month').value;
-    
+
     let url = `${API_BASE}/invoices`;
     if (dateFilter) url += `?date=${dateFilter}`;
     else if (monthFilter) url += `?month=${monthFilter}`;
-    
+
     try {
         const res = await fetchAuth(url);
         invoicesList = await res.json();
         const tbody = document.querySelector('#invoices-table tbody');
         tbody.innerHTML = '';
-        
+
         invoicesList.forEach(inv => {
             const tr = document.createElement('tr');
             let adminActions = '';
@@ -702,7 +702,7 @@ async function loadInvoices() {
                 invDisplay += `<div style="font-size:11px;color:var(--primary);margin-top:2px;">[${inv.owner_name}]</div>`;
                 adminActions = `<button class="btn btn-danger btn-icon-only delete-invoice-btn" style="margin-left: 4px;" data-id="${inv.id}"><i class='bx bx-trash'></i></button>`;
             }
-            
+
             tr.innerHTML = `
                 <td>${invDisplay}</td>
                 <td>${inv.date}</td>
@@ -724,22 +724,22 @@ async function loadInvoices() {
                     const res = await fetchAuth(`${API_BASE}/invoices/${id}`);
                     const inv = await res.json();
                     showInvoicePrintout(inv);
-                } catch(err) { console.error(err); }
+                } catch (err) { console.error(err); }
             });
         });
-        
+
         document.querySelectorAll('.delete-invoice-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
-                if(confirm('Are you sure you want to delete this invoice? (This will restock the inventory automatically)')) {
+                if (confirm('Are you sure you want to delete this invoice? (This will restock the inventory automatically)')) {
                     const id = e.currentTarget.dataset.id;
                     try {
                         await fetchAuth(`${API_BASE}/invoices/${id}`, { method: 'DELETE' });
                         loadInvoices();
-                    } catch(err) { console.error(err); }
+                    } catch (err) { console.error(err); }
                 }
             });
         });
-        
+
     } catch (err) {
         console.error(err);
     }
@@ -781,25 +781,25 @@ async function loadReports() {
     const thead = document.querySelector('#reports-table document, #reports-table thead');
     const tbody = document.querySelector('#reports-table tbody');
     tbody.innerHTML = '';
-    
+
     try {
         if (currentReportMode === 'sales') {
             thead.innerHTML = `<tr><th>Date</th><th>Total Sales</th></tr>`;
             const res = await fetchAuth(`${API_BASE}/reports/sales`);
             const data = await res.json();
             data.forEach(row => {
-               const tr = document.createElement('tr');
-               tr.innerHTML = `<td>${row.date}</td><td>${formatCurrency(row.total_sales)}</td>`;
-               tbody.appendChild(tr);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${row.date}</td><td>${formatCurrency(row.total_sales)}</td>`;
+                tbody.appendChild(tr);
             });
         } else {
             thead.innerHTML = `<tr><th>Product Name</th><th>Quantity Sold</th><th>Revenue</th></tr>`;
             const res = await fetchAuth(`${API_BASE}/reports/product-sales`);
             const data = await res.json();
             data.forEach(row => {
-               const tr = document.createElement('tr');
-               tr.innerHTML = `<td>${row.product_name}</td><td>${row.quantity_sold}</td><td>${formatCurrency(row.revenue)}</td>`;
-               tbody.appendChild(tr);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${row.product_name}</td><td>${row.quantity_sold}</td><td>${formatCurrency(row.revenue)}</td>`;
+                tbody.appendChild(tr);
             });
         }
     } catch (err) {
@@ -814,10 +814,10 @@ async function loadAdminUsers() {
     try {
         const res = await fetchAuth(`${API_BASE}/admin/users`);
         adminUsersList = await res.json();
-        
+
         const tbody = document.querySelector('#admin-users-table tbody');
         tbody.innerHTML = '';
-        
+
         adminUsersList.forEach(user => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -846,13 +846,13 @@ document.querySelector('#admin-users-table tbody').addEventListener('click', asy
         if (user) {
             // Set filter and switch tabs
             adminInventoryFilter = user.business_name;
-            
+
             navLinks.forEach(l => l.classList.remove('active'));
             document.querySelector('[data-target="inventory-view"]').classList.add('active');
-            
+
             views.forEach(v => v.classList.remove('active'));
             document.getElementById('inventory-view').classList.add('active');
-            
+
             pageTitle.textContent = "Inventory";
             currentTab = 'inventory-view';
             loadInventory();
@@ -874,10 +874,10 @@ document.querySelector('#admin-users-table tbody').addEventListener('click', asy
         }
         return;
     }
-    
+
     const delBtn = e.target.closest('.admin-del-btn');
     if (delBtn) {
-        if(confirm('Are you sure you want to permanently delete this user and ALL their data (products, invoices)?')) {
+        if (confirm('Are you sure you want to permanently delete this user and ALL their data (products, invoices)?')) {
             try {
                 await fetchAuth(`${API_BASE}/admin/users/${delBtn.dataset.id}`, { method: 'DELETE' });
                 loadAdminUsers();
