@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { connectDB, initializeDatabase, User, Product, Invoice } = require('./database');
+const { connectDB, initializeDatabase, User, Product, Invoice, Category } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -217,7 +217,7 @@ app.get('/api/dashboard/low-stock', async (req, res) => {
 app.get('/api/categories', async (req, res) => {
     try {
         const queryFilter = req.user.role === 'admin' ? {} : { user_id: req.user._id };
-        const categories = await db.Category.find(queryFilter).sort({ name: 1 });
+        const categories = await Category.find(queryFilter).sort({ name: 1 });
         res.json(categories.map(c => ({ id: c._id.toString(), name: c.name })));
     } catch (err) {
         return res.status(500).json({ error: err.message });
@@ -228,7 +228,7 @@ app.post('/api/categories', async (req, res) => {
     const { name } = req.body;
     if (!name) return res.status(400).json({ error: 'Name is required' });
     try {
-        const category = await db.Category.create({ user_id: req.user._id, name });
+        const category = await Category.create({ user_id: req.user._id, name });
         res.status(201).json({ id: category._id.toString(), name: category.name });
     } catch (err) {
         return res.status(500).json({ error: err.message });
@@ -238,7 +238,7 @@ app.post('/api/categories', async (req, res) => {
 app.delete('/api/categories/:id', async (req, res) => {
     try {
         const queryFilter = req.user.role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, user_id: req.user._id };
-        const category = await db.Category.findOneAndDelete(queryFilter);
+        const category = await Category.findOneAndDelete(queryFilter);
         if (!category) return res.status(404).json({ error: 'Category not found' });
         res.json({ message: 'Category deleted successfully' });
     } catch (err) {
