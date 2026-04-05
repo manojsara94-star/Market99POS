@@ -648,7 +648,7 @@ function updateBillUI() {
     document.getElementById('pos-total-amount').textContent = formatCurrency(total);
 }
 
-document.getElementById('btn-submit-bill').addEventListener('click', async () => {
+async function submitCurrentBill(autoPrint) {
     if (currentBill.length === 0) {
         alert('Bill is empty!');
         return;
@@ -673,7 +673,7 @@ document.getElementById('btn-submit-bill').addEventListener('click', async () =>
         const data = await res.json();
 
         // Print
-        showInvoicePrintout(data.invoice);
+        showInvoicePrintout(data.invoice, autoPrint);
 
         // Clear bill
         currentBill = [];
@@ -689,9 +689,12 @@ document.getElementById('btn-submit-bill').addEventListener('click', async () =>
         console.error(err);
         alert('Error saving bill');
     }
-});
+}
 
-function showInvoicePrintout(invoice) {
+document.getElementById('btn-submit-bill').addEventListener('click', () => submitCurrentBill(false));
+document.getElementById('btn-submit-print').addEventListener('click', () => submitCurrentBill(true));
+
+function showInvoicePrintout(invoice, autoPrint = true) {
     document.getElementById('receipt-no').textContent = invoice.invoice_number;
     document.getElementById('receipt-date').textContent = invoice.date;
     document.getElementById('receipt-time').textContent = invoice.time;
@@ -717,9 +720,12 @@ function showInvoicePrintout(invoice) {
 
     // Automatically open modal and print dialog as per rules
     showModal(invoiceModal);
-    setTimeout(() => {
-        window.print();
-    }, 500);
+
+    if (autoPrint) {
+        setTimeout(() => {
+            window.print();
+        }, 500);
+    }
 }
 
 // ==== INVOICES ====
@@ -764,11 +770,12 @@ async function loadInvoices() {
 
         document.querySelectorAll('.view-invoice-btn, .print-invoice-btn').forEach(btn => {
             btn.addEventListener('click', async (e) => {
+                const autoPrint = e.currentTarget.classList.contains('print-invoice-btn');
                 const id = e.currentTarget.dataset.id;
                 try {
                     const res = await fetchAuth(`${API_BASE}/invoices/${id}`);
                     const inv = await res.json();
-                    showInvoicePrintout(inv);
+                    showInvoicePrintout(inv, autoPrint);
                 } catch (err) { console.error(err); }
             });
         });
