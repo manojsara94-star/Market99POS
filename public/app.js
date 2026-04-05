@@ -151,6 +151,8 @@ const modalOverlay = document.getElementById('modal-overlay');
 const productModal = document.getElementById('product-modal');
 const invoiceModal = document.getElementById('invoice-modal');
 const adminUserModal = document.getElementById('admin-user-modal');
+const customerModal = document.getElementById('customer-modal');
+const expenseModal = document.getElementById('expense-modal');
 
 // ==== INITIALIZATION ====
 document.addEventListener('DOMContentLoaded', () => {

@@ -297,6 +297,16 @@ app.delete('/api/expenses/:id', async (req, res) => {
     }
 });
 
+app.get('/api/customers', async (req, res) => {
+    try {
+        const queryFilter = req.user.role === 'admin' ? {} : { user_id: req.user._id };
+        const customers = await Customer.find(queryFilter).sort({ name: 1 });
+        res.json(customers);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
 app.post('/api/customers', async (req, res) => {
     const { name, contact, address } = req.body;
     if (!name) return res.status(400).json({ error: 'Name is required' });
