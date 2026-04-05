@@ -206,6 +206,7 @@ function setupModals() {
         document.getElementById('product-form').reset();
         document.getElementById('product-id').value = '';
         document.getElementById('product-description').value = '';
+        document.getElementById('product-category').value = '';
         document.getElementById('product-cost').value = '';
         document.getElementById('product-low-stock').value = '10';
         currentProductImageBase64 = null;
@@ -261,6 +262,7 @@ function setupModals() {
         const id = document.getElementById('product-id').value;
         const name = document.getElementById('product-name').value;
         const description = document.getElementById('product-description').value;
+        const category = document.getElementById('product-category').value;
         const qty = document.getElementById('product-qty').value;
         const low_stock_limit = document.getElementById('product-low-stock').value;
         const cost = document.getElementById('product-cost').value;
@@ -269,6 +271,7 @@ function setupModals() {
         const payload = {
             name,
             description,
+            category,
             quantity: parseInt(qty),
             low_stock_limit: parseInt(low_stock_limit),
             cost: parseFloat(cost),
@@ -437,6 +440,17 @@ async function loadInventory() {
         const res = await fetchAuth(`${API_BASE}/products`);
         products = await res.json();
         checkLowStockAlerts(products);
+
+        // Dynamically populate category datalist
+        const categories = [...new Set(products.map(p => p.category).filter(c => c))];
+        const dataList = document.getElementById('category-list');
+        dataList.innerHTML = '';
+        categories.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat;
+            dataList.appendChild(opt);
+        });
+
         const tbody = document.querySelector('#inventory-table tbody');
         tbody.innerHTML = '';
 
@@ -463,6 +477,7 @@ async function loadInventory() {
             tr.innerHTML = `
                 <td style="display:flex;align-items:center;gap:12px;">${imgHtml} ${nameDisplay}</td>
                 <td class="${p.quantity <= (p.low_stock_limit !== undefined ? p.low_stock_limit : 10) ? 'text-danger' : ''}">${p.quantity}</td>
+                <td><span class="badge" style="background:#eef2f6;color:var(--text-color);">${p.category || 'General'}</span></td>
                 <td>${formatCurrency(p.cost || 0)}</td>
                 <td>${formatCurrency(p.price)}</td>
                 <td>
@@ -503,6 +518,7 @@ function editProduct(id) {
         document.getElementById('product-id').value = p.id;
         document.getElementById('product-name').value = p.name;
         document.getElementById('product-description').value = p.description || '';
+        document.getElementById('product-category').value = p.category || 'General';
         document.getElementById('product-qty').value = p.quantity;
         document.getElementById('product-low-stock').value = p.low_stock_limit !== undefined ? p.low_stock_limit : 10;
         document.getElementById('product-cost').value = p.cost || 0;
@@ -530,8 +546,8 @@ async function deleteProduct(id) {
 }
 
 document.getElementById('btn-export-inventory').addEventListener('click', () => {
-    const csvData = [['Item Name', 'Quantity', 'Low Stock Limit', 'Cost', 'Price']];
-    products.forEach(p => csvData.push([p.name, p.quantity, p.low_stock_limit !== undefined ? p.low_stock_limit : 10, p.cost || 0, p.price]));
+    const csvData = [['Item Name', 'Category', 'Quantity', 'Low Stock Limit', 'Cost', 'Price']];
+    products.forEach(p => csvData.push([p.name, p.category || 'General', p.quantity, p.low_stock_limit !== undefined ? p.low_stock_limit : 10, p.cost || 0, p.price]));
     exportToCSV('products.csv', csvData);
 });
 

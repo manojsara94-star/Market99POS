@@ -288,6 +288,7 @@
                                     <tr>
                                         <th>Item Name</th>
                                         <th>Quantity</th>
+                                        <th>Category</th>
                                         <th>Cost</th>
                                         <th>Price</th>
                                         <th>Actions</th>
@@ -406,9 +407,16 @@
                                 <span style="color:var(--text-muted);font-size:12px;">+ Add Image</span>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label>Item Name</label>
-                            <input type="text" id="product-name" class="form-control" required>
+                        <div class="form-group" style="display: flex; gap: 10px;">
+                            <div style="flex: 2;">
+                                <label>Item Name</label>
+                                <input type="text" id="product-name" class="form-control" required>
+                            </div>
+                            <div style="flex: 1;">
+                                <label>Category</label>
+                                <input type="text" id="product-category" class="form-control" list="category-list" placeholder="General">
+                                <datalist id="category-list"></datalist>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label>Description / Details</label>

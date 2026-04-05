@@ -226,6 +226,7 @@ app.get('/api/products', async (req, res) => {
             id: p._id.toString(),
             name: p.name,
             description: p.description,
+            category: p.category || 'General',
             quantity: p.quantity,
             low_stock_limit: p.low_stock_limit !== undefined ? p.low_stock_limit : 10,
             cost: p.cost || 0,
@@ -241,7 +242,7 @@ app.get('/api/products', async (req, res) => {
 });
 
 app.post('/api/products', async (req, res) => {
-    const { name, description, quantity, low_stock_limit, cost, price, image } = req.body;
+    const { name, description, category, quantity, low_stock_limit, cost, price, image } = req.body;
     if (!name || quantity === undefined || price === undefined) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -251,6 +252,7 @@ app.post('/api/products', async (req, res) => {
             user_id: req.user._id,
             name,
             description,
+            category: category || 'General',
             quantity,
             low_stock_limit: low_stock_limit !== undefined ? low_stock_limit : 10,
             cost: cost || 0,
@@ -264,12 +266,12 @@ app.post('/api/products', async (req, res) => {
 });
 
 app.put('/api/products/:id', async (req, res) => {
-    const { name, description, quantity, low_stock_limit, cost, price, image } = req.body;
+    const { name, description, category, quantity, low_stock_limit, cost, price, image } = req.body;
     try {
         const queryFilter = req.user.role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, user_id: req.user._id };
         const product = await Product.findOneAndUpdate(
             queryFilter,
-            { name, description, quantity, low_stock_limit: low_stock_limit !== undefined ? low_stock_limit : 10, cost, price, image },
+            { name, description, category: category || 'General', quantity, low_stock_limit: low_stock_limit !== undefined ? low_stock_limit : 10, cost, price, image },
             { new: true }
         );
         if (!product) return res.status(404).json({ error: 'Product not found' });
