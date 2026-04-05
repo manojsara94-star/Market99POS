@@ -175,6 +175,7 @@ function setupNavigation() {
             if (target === 'dashboard-view') loadDashboard();
             if (target === 'inventory-view') loadInventory();
             if (target === 'customers-view') loadCustomers();
+            if (target === 'expenses-view') loadExpenses();
             if (target === 'pos-view') loadPOS();
             if (target === 'invoices-view') loadInvoices();
             if (target === 'reports-view') loadReports();
@@ -222,6 +223,7 @@ function setupModals() {
     document.getElementById('btn-close-admin-modal').addEventListener('click', hideModal);
     document.getElementById('btn-close-category-modal').addEventListener('click', hideModal);
     document.getElementById('btn-close-customer-modal').addEventListener('click', hideModal);
+    document.getElementById('btn-close-expense-modal').addEventListener('click', hideModal);
 
     // Add product
     document.getElementById('btn-add-product').addEventListener('click', () => {
@@ -243,6 +245,15 @@ function setupModals() {
         document.getElementById('customer-id').value = '';
         document.getElementById('customer-modal-title').textContent = 'Add Customer';
         showModal(document.getElementById('customer-modal'));
+    });
+
+    // Add Expense
+    document.getElementById('btn-add-expense').addEventListener('click', () => {
+        document.getElementById('expense-form').reset();
+        document.getElementById('expense-id').value = '';
+        document.getElementById('expense-date').value = new Date().toISOString().split('T')[0];
+        document.getElementById('expense-modal-title').textContent = 'Add Expenditure';
+        showModal(document.getElementById('expense-modal'));
     });
 
     // Handle Image Selection
@@ -348,6 +359,35 @@ function setupModals() {
         } catch (err) {
             console.error(err);
             alert('Error saving customer');
+        }
+    });
+
+    // Handle Expense Form
+    document.getElementById('expense-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('expense-id').value;
+        const title = document.getElementById('expense-title').value;
+        const amount = document.getElementById('expense-amount').value;
+        const category = document.getElementById('expense-category').value;
+        const date = document.getElementById('expense-date').value;
+        const note = document.getElementById('expense-note').value;
+
+        const payload = { title, amount: parseFloat(amount), category, date, note };
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `${API_BASE}/expenses/${id}` : `${API_BASE}/expenses`;
+
+        try {
+            await fetchAuth(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            hideModal();
+            loadExpenses();
+            loadDashboard(); // Update profit cards
+        } catch (err) {
+            console.error(err);
+            alert('Error saving expenditure');
         }
     });
 
@@ -465,6 +505,66 @@ async function deleteCustomer(id) {
             console.error(err);
             alert('Error deleting customer');
         }
+    }
+}
+
+// ==== EXPENSES ====
+let expensesList = [];
+
+async function loadExpenses() {
+    try {
+        const res = await fetchAuth(`${API_BASE}/expenses`);
+        expensesList = await res.json();
+        const tbody = document.querySelector('#expenses-table tbody');
+        tbody.innerHTML = '';
+
+        expensesList.forEach(e => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${e.date}</td>
+                <td>${e.title}</td>
+                <td><span class="badge">${e.category || 'General'}</span></td>
+                <td>${formatCurrency(e.amount)}</td>
+                <td style="font-size:12px;color:var(--text-muted);">${e.note || '-'}</td>
+                <td>
+                    <button class="btn btn-outline btn-icon-only edit-exp-btn" data-id="${e._id || e.id}"><i class='bx bx-edit'></i></button>
+                    <button class="btn btn-danger btn-icon-only del-exp-btn" data-id="${e._id || e.id}"><i class='bx bx-trash'></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (err) { console.error(err); }
+}
+
+document.querySelector('#expenses-table tbody').addEventListener('click', (e) => {
+    const editBtn = e.target.closest('.edit-exp-btn');
+    if (editBtn) {
+        const id = editBtn.dataset.id;
+        const exp = expensesList.find(i => (i._id || i.id) == id);
+        if (exp) {
+            document.getElementById('expense-id').value = id;
+            document.getElementById('expense-title').value = exp.title;
+            document.getElementById('expense-amount').value = exp.amount;
+            document.getElementById('expense-category').value = exp.category || '';
+            document.getElementById('expense-date').value = exp.date;
+            document.getElementById('expense-note').value = exp.note || '';
+            document.getElementById('expense-modal-title').textContent = 'Edit Expenditure';
+            showModal(document.getElementById('expense-modal'));
+        }
+        return;
+    }
+
+    const delBtn = e.target.closest('.del-exp-btn');
+    if (delBtn) deleteExpense(delBtn.dataset.id);
+});
+
+async function deleteExpense(id) {
+    if (confirm('Are you sure you want to delete this expense?')) {
+        try {
+            await fetchAuth(`${API_BASE}/expenses/${id}`, { method: 'DELETE' });
+            loadExpenses();
+            loadDashboard();
+        } catch (err) { alert('Error deleting expense'); }
     }
 }
 
@@ -882,13 +982,21 @@ async function submitCurrentBill(autoPrint) {
     const customerContact = document.getElementById('pos-customer-contact').value.trim();
     const customerAddress = document.getElementById('pos-customer-address').value.trim();
 
+    const now = new Date();
+    // Helper to format as local date (YYYY-MM-DD)
+    const localDate = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+    // Helper to format as local time (HH:MM)
+    const localTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
     const payload = {
         items: currentBill,
         total_amount: total,
         total_discount: totalDiscount,
         customer_name: customerName,
         customer_contact: customerContact,
-        customer_address: customerAddress
+        customer_address: customerAddress,
+        date: localDate,
+        time: localTime
     };
 
     try {

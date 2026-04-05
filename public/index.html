@@ -100,6 +100,12 @@
                     </a>
                 </li>
                 <li>
+                    <a href="#" class="nav-link" data-target="expenses-view">
+                        <i class='bx bx-wallet icon'></i>
+                        <span class="link-name">Expenses</span>
+                    </a>
+                </li>
+                <li>
                     <a href="#" class="nav-link" data-target="invoices-view">
                         <i class='bx bx-receipt icon'></i>
                         <span class="link-name">Invoices</span>
@@ -347,6 +353,37 @@
                                         <th>Name</th>
                                         <th>Contact No</th>
                                         <th>Address</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Expenses View -->
+                <section id="expenses-view" class="view">
+                    <div class="view-header">
+                        <h2>Business Expenditures</h2>
+                        <div class="header-actions">
+                            <button class="btn btn-primary" id="btn-add-expense">
+                                <i class='bx bx-plus'></i> Add Expense
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-card">
+                        <div class="table-responsive">
+                            <table class="data-table" id="expenses-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Title</th>
+                                        <th>Category</th>
+                                        <th>Amount</th>
+                                        <th>Note</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -631,6 +668,47 @@
                             <textarea id="customer-address" class="form-control" rows="3"></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary btn-block">Save Customer</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Expense Modal -->
+            <div class="modal" id="expense-modal" style="max-width:450px;">
+                <div class="modal-header">
+                    <h3 id="expense-modal-title">Add Expenditure</h3>
+                    <button class="close-btn" id="btn-close-expense-modal"><i class='bx bx-x'></i></button>
+                </div>
+                <div class="modal-body">
+                    <form id="expense-form">
+                        <input type="hidden" id="expense-id">
+                        <div class="form-group">
+                            <label>Title</label>
+                            <input type="text" id="expense-title" class="form-control" placeholder="e.g., Shop Rent, Electricity" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Amount (Rs)</label>
+                            <input type="number" id="expense-amount" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <input type="text" id="expense-category" class="form-control" list="expense-cat-list" placeholder="General">
+                            <datalist id="expense-cat-list">
+                                <option value="Utilities">
+                                <option value="Rent">
+                                <option value="Salaries">
+                                <option value="Repairs">
+                                <option value="Marketing">
+                            </datalist>
+                        </div>
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" id="expense-date" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Note</label>
+                            <textarea id="expense-note" class="form-control" rows="2"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Save Expense</button>
                     </form>
                 </div>
             </div>

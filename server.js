@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { connectDB, initializeDatabase, User, Product, Invoice, Category, Customer } = require('./database');
+const { connectDB, initializeDatabase, User, Product, Invoice, Category, Customer, Expense } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -152,28 +152,21 @@ app.get('/api/dashboard', async (req, res) => {
     
     try {
         // Daily Stats
-        const dailyInvoices = await Invoice.find({ ...queryFilter, date: today });
-        const totalBillsToday = dailyInvoices.length;
-        const dailyIncome = dailyInvoices.reduce((sum, inv) => sum + inv.total_amount, 0);
-        const dailyProfit = dailyInvoices.reduce((sum, inv) => sum + (inv.total_profit || 0), 0);
+        const dailyInvoices = await Invoice.find({ ...queryFilter, date: todayStr });
+        const monthlyInvoices = await Invoice.find({ ...queryFilter, date: new RegExp('^' + monthStr) });
+        
+        // Profit 
+        const dailyProfitRaw = dailyInvoices.reduce((sum, inv) => sum + (inv.total_profit || 0), 0);
+        const monthlyProfitRaw = monthlyInvoices.reduce((sum, inv) => sum + (inv.total_profit || 0), 0);
 
-        // Monthly Stats
-        const monthlyInvoices = await Invoice.find({ ...queryFilter, date: new RegExp('^' + currentMonth) });
-        const totalBillsMonth = monthlyInvoices.length;
-        const monthlyIncome = monthlyInvoices.reduce((sum, inv) => sum + inv.total_amount, 0);
-        const monthlyProfit = monthlyInvoices.reduce((sum, inv) => sum + (inv.total_profit || 0), 0);
+        // Fetch Expenses
+        const dailyExpenses = await Expense.find({ ...queryFilter, date: todayStr });
+        const monthlyExpenses = await Expense.find({ ...queryFilter, date: new RegExp('^' + monthStr) });
 
-        // Product Stats
-        const totalProducts = await Product.countDocuments(queryFilter);
-        const lowStockQuery = { 
-            ...queryFilter, 
-            $expr: { $lte: ["$quantity", { $ifNull: ["$low_stock_limit", 10] }] }
-        };
-        const lowStockProducts = await Product.countDocuments(lowStockQuery);
+        const dailyExpenseTotal = dailyExpenses.reduce((sum, e) => sum + e.amount, 0);
+        const monthlyExpenseTotal = monthlyExpenses.reduce((sum, e) => sum + e.amount, 0);
 
         res.json({
-            totalBillsToday,
-            dailyIncome,
             dailyProfit,
             totalBillsMonth,
             monthlyIncome,
@@ -246,11 +239,49 @@ app.delete('/api/categories/:id', async (req, res) => {
     }
 });
 
-app.get('/api/customers', async (req, res) => {
+app.get('/api/expenses', async (req, res) => {
     try {
         const queryFilter = req.user.role === 'admin' ? {} : { user_id: req.user._id };
-        const customers = await Customer.find(queryFilter).sort({ name: 1 });
-        res.json(customers);
+        const expenses = await Expense.find(queryFilter).sort({ date: -1 });
+        res.json(expenses);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/expenses', async (req, res) => {
+    const { title, amount, category, date, note } = req.body;
+    if (!title || !amount || !date) return res.status(400).json({ error: 'Title, amount and date are required' });
+    try {
+        const expense = await Expense.create({ user_id: req.user._id, title, amount, category, date, note });
+        res.status(201).json(expense);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/expenses/:id', async (req, res) => {
+    const { title, amount, category, date, note } = req.body;
+    try {
+        const queryFilter = req.user.role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, user_id: req.user._id };
+        const expense = await Expense.findOneAndUpdate(
+            queryFilter,
+            { title, amount, category, date, note },
+            { new: true }
+        );
+        if (!expense) return res.status(404).json({ error: 'Expense not found' });
+        res.json(expense);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/expenses/:id', async (req, res) => {
+    try {
+        const queryFilter = req.user.role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, user_id: req.user._id };
+        const expense = await Expense.findOneAndDelete(queryFilter);
+        if (!expense) return res.status(404).json({ error: 'Expense not found' });
+        res.json({ message: 'Expense deleted' });
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
@@ -434,14 +465,14 @@ app.get('/api/invoices/:id', async (req, res) => {
 });
 
 app.post('/api/invoices', async (req, res) => {
-    const { items, total_amount, total_discount, customer_name, customer_contact, customer_address } = req.body;
+    const { items, total_amount, total_discount, customer_name, customer_contact, customer_address, date: clientDate, time: clientTime } = req.body;
     if (!items || items.length === 0) {
         return res.status(400).json({ error: 'Invoice must have items' });
     }
 
     const today = new Date();
-    const date = today.toISOString().split('T')[0];
-    const time = today.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
+    const date = clientDate || today.toISOString().split('T')[0];
+    const time = clientTime || today.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
     const invoice_number = 'INV-' + today.getTime().toString().slice(-6);
 
     const formattedItems = items.map(item => {
