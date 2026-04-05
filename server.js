@@ -303,7 +303,7 @@ app.post('/api/products', async (req, res) => {
             price,
             image
         });
-        res.status(201).json({ id: product._id.toString(), name, description, quantity, low_stock_limit: product.low_stock_limit, cost: product.cost, price, image });
+        res.status(201).json({ id: product._id.toString(), name, description, category: product.category, quantity, low_stock_limit: product.low_stock_limit, cost: product.cost, price, image });
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }

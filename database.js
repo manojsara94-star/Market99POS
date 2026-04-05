@@ -43,6 +43,7 @@ const ProductSchema = new mongoose.Schema({
     low_stock_limit: { type: Number, default: 10 },
     cost: { type: Number, default: 0.0 },
     price: { type: Number, default: 0.0 },
+    category: { type: String, default: 'General'},
     image: { type: String }
 });
 
