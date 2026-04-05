@@ -119,6 +119,7 @@ let currentBill = [];
 let currentTab = 'dashboard-view';
 let chartInstance = null;
 let currentProductImageBase64 = null;
+let notifiedLowStockProducts = new Set();
 
 // ==== DOM ELEMENTS ====
 const clockEl = document.getElementById('clock');
@@ -132,6 +133,10 @@ const adminUserModal = document.getElementById('admin-user-modal');
 
 // ==== INITIALIZATION ====
 document.addEventListener('DOMContentLoaded', () => {
+    if ("Notification" in window && Notification.permission === "default") {
+        Notification.requestPermission();
+    }
+
     checkAuth();
     updateClock();
     setInterval(updateClock, 1000);
@@ -332,6 +337,25 @@ function formatCurrency(amount) {
     return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'LKR' }).format(amount).replace('LKR', 'Rs.');
 }
 
+function checkLowStockAlerts(productList) {
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
+
+    productList.forEach(p => {
+        const limit = p.low_stock_limit !== undefined ? p.low_stock_limit : 10;
+        if (p.quantity <= limit) {
+            if (!notifiedLowStockProducts.has(p.id)) {
+                new Notification("Low Stock Alert!", {
+                    body: `"${p.name}" is running low on stock (Only ${p.quantity} left).`,
+                    icon: 'https://cdn-icons-png.flaticon.com/512/5680/5680583.png'
+                });
+                notifiedLowStockProducts.add(p.id);
+            }
+        } else {
+            notifiedLowStockProducts.delete(p.id);
+        }
+    });
+}
+
 function exportToCSV(filename, rows) {
     let processRow = function (row) {
         let finalVal = '';
@@ -412,6 +436,7 @@ async function loadInventory() {
     try {
         const res = await fetchAuth(`${API_BASE}/products`);
         products = await res.json();
+        checkLowStockAlerts(products);
         const tbody = document.querySelector('#inventory-table tbody');
         tbody.innerHTML = '';
 
@@ -519,6 +544,7 @@ async function loadPOS() {
     try {
         const res = await fetchAuth(`${API_BASE}/products`);
         products = await res.json();
+        checkLowStockAlerts(products);
         renderPOSProducts(products);
     } catch (err) {
         console.error(err);
@@ -654,7 +680,10 @@ document.getElementById('btn-submit-bill').addEventListener('click', async () =>
         updateBillUI();
 
         // Reload products cache
-        fetchAuth(`${API_BASE}/products`).then(r => r.json()).then(p => products = p);
+        fetchAuth(`${API_BASE}/products`).then(r => r.json()).then(p => {
+            products = p;
+            checkLowStockAlerts(products);
+        });
 
     } catch (err) {
         console.error(err);
