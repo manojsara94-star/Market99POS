@@ -165,7 +165,11 @@ app.get('/api/dashboard', async (req, res) => {
 
         // Product Stats
         const totalProducts = await Product.countDocuments(queryFilter);
-        const lowStockProducts = await Product.countDocuments({ ...queryFilter, quantity: { $lte: 10 } });
+        const lowStockQuery = { 
+            ...queryFilter, 
+            $expr: { $lte: ["$quantity", { $ifNull: ["$low_stock_limit", 10] }] }
+        };
+        const lowStockProducts = await Product.countDocuments(lowStockQuery);
 
         res.json({
             totalBillsToday,
@@ -185,7 +189,11 @@ app.get('/api/dashboard', async (req, res) => {
 app.get('/api/dashboard/low-stock', async (req, res) => {
     try {
         const queryFilter = req.user.role === 'admin' ? {} : { user_id: req.user._id };
-        const products = await Product.find({ ...queryFilter, quantity: { $lte: 10 } })
+        const lowStockQuery = { 
+            ...queryFilter, 
+            $expr: { $lte: ["$quantity", { $ifNull: ["$low_stock_limit", 10] }] }
+        };
+        const products = await Product.find(lowStockQuery)
             .populate('user_id', 'business_name')
             .sort({ quantity: 1 })
             .limit(10);
@@ -219,6 +227,7 @@ app.get('/api/products', async (req, res) => {
             name: p.name,
             description: p.description,
             quantity: p.quantity,
+            low_stock_limit: p.low_stock_limit !== undefined ? p.low_stock_limit : 10,
             cost: p.cost || 0,
             price: p.price,
             image: p.image,
@@ -232,7 +241,7 @@ app.get('/api/products', async (req, res) => {
 });
 
 app.post('/api/products', async (req, res) => {
-    const { name, description, quantity, cost, price, image } = req.body;
+    const { name, description, quantity, low_stock_limit, cost, price, image } = req.body;
     if (!name || quantity === undefined || price === undefined) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -243,23 +252,24 @@ app.post('/api/products', async (req, res) => {
             name,
             description,
             quantity,
+            low_stock_limit: low_stock_limit !== undefined ? low_stock_limit : 10,
             cost: cost || 0,
             price,
             image
         });
-        res.status(201).json({ id: product._id.toString(), name, description, quantity, cost: product.cost, price, image });
+        res.status(201).json({ id: product._id.toString(), name, description, quantity, low_stock_limit: product.low_stock_limit, cost: product.cost, price, image });
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
 });
 
 app.put('/api/products/:id', async (req, res) => {
-    const { name, description, quantity, cost, price, image } = req.body;
+    const { name, description, quantity, low_stock_limit, cost, price, image } = req.body;
     try {
         const queryFilter = req.user.role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, user_id: req.user._id };
         const product = await Product.findOneAndUpdate(
             queryFilter,
-            { name, description, quantity, cost, price, image },
+            { name, description, quantity, low_stock_limit: low_stock_limit !== undefined ? low_stock_limit : 10, cost, price, image },
             { new: true }
         );
         if (!product) return res.status(404).json({ error: 'Product not found' });

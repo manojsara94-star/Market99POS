@@ -40,6 +40,7 @@ const ProductSchema = new mongoose.Schema({
     name: { type: String, required: true },
     description: { type: String },
     quantity: { type: Number, default: 0 },
+    low_stock_limit: { type: Number, default: 10 },
     cost: { type: Number, default: 0.0 },
     price: { type: Number, default: 0.0 },
     image: { type: String }

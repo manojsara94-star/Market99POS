@@ -202,6 +202,7 @@ function setupModals() {
         document.getElementById('product-id').value = '';
         document.getElementById('product-description').value = '';
         document.getElementById('product-cost').value = '';
+        document.getElementById('product-low-stock').value = '10';
         currentProductImageBase64 = null;
         document.getElementById('product-image-preview').innerHTML = '<span style="color:var(--text-muted);font-size:12px;">+ Add Image</span>';
         document.getElementById('product-modal-title').textContent = 'Add Product';
@@ -256,6 +257,7 @@ function setupModals() {
         const name = document.getElementById('product-name').value;
         const description = document.getElementById('product-description').value;
         const qty = document.getElementById('product-qty').value;
+        const low_stock_limit = document.getElementById('product-low-stock').value;
         const cost = document.getElementById('product-cost').value;
         const price = document.getElementById('product-price').value;
 
@@ -263,6 +265,7 @@ function setupModals() {
             name,
             description,
             quantity: parseInt(qty),
+            low_stock_limit: parseInt(low_stock_limit),
             cost: parseFloat(cost),
             price: parseFloat(price),
             image: currentProductImageBase64
@@ -434,7 +437,7 @@ async function loadInventory() {
 
             tr.innerHTML = `
                 <td style="display:flex;align-items:center;gap:12px;">${imgHtml} ${nameDisplay}</td>
-                <td class="${p.quantity <= 10 ? 'text-danger' : ''}">${p.quantity}</td>
+                <td class="${p.quantity <= (p.low_stock_limit !== undefined ? p.low_stock_limit : 10) ? 'text-danger' : ''}">${p.quantity}</td>
                 <td>${formatCurrency(p.cost || 0)}</td>
                 <td>${formatCurrency(p.price)}</td>
                 <td>
@@ -476,6 +479,7 @@ function editProduct(id) {
         document.getElementById('product-name').value = p.name;
         document.getElementById('product-description').value = p.description || '';
         document.getElementById('product-qty').value = p.quantity;
+        document.getElementById('product-low-stock').value = p.low_stock_limit !== undefined ? p.low_stock_limit : 10;
         document.getElementById('product-cost').value = p.cost || 0;
         document.getElementById('product-price').value = p.price;
 
@@ -501,8 +505,8 @@ async function deleteProduct(id) {
 }
 
 document.getElementById('btn-export-inventory').addEventListener('click', () => {
-    const csvData = [['Item Name', 'Quantity', 'Cost', 'Price']];
-    products.forEach(p => csvData.push([p.name, p.quantity, p.cost || 0, p.price]));
+    const csvData = [['Item Name', 'Quantity', 'Low Stock Limit', 'Cost', 'Price']];
+    products.forEach(p => csvData.push([p.name, p.quantity, p.low_stock_limit !== undefined ? p.low_stock_limit : 10, p.cost || 0, p.price]));
     exportToCSV('products.csv', csvData);
 });
 
