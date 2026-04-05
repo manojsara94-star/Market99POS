@@ -146,31 +146,41 @@ app.delete('/api/admin/users/:id', adminMiddleware, async (req, res) => {
 app.get('/api/dashboard', async (req, res) => {
     const today = new Date().toISOString().split('T')[0];
     const currentMonth = today.slice(0, 7); // YYYY-MM
-    
-    // Admin query filter bypass
     const queryFilter = req.user.role === 'admin' ? {} : { user_id: req.user._id };
     
     try {
         // Daily Stats
-        const dailyInvoices = await Invoice.find({ ...queryFilter, date: todayStr });
-        const monthlyInvoices = await Invoice.find({ ...queryFilter, date: new RegExp('^' + monthStr) });
+        const dailyInvoices = await Invoice.find({ ...queryFilter, date: today });
+        const monthlyInvoices = await Invoice.find({ ...queryFilter, date: new RegExp('^' + currentMonth) });
         
+        // Income & Counts
+        const dailyIncome = dailyInvoices.reduce((sum, inv) => sum + inv.total_amount, 0);
+        const monthlyIncome = monthlyInvoices.reduce((sum, inv) => sum + inv.total_amount, 0);
+        const totalBillsToday = dailyInvoices.length;
+        const totalBillsMonth = monthlyInvoices.length;
+
         // Profit 
         const dailyProfitRaw = dailyInvoices.reduce((sum, inv) => sum + (inv.total_profit || 0), 0);
         const monthlyProfitRaw = monthlyInvoices.reduce((sum, inv) => sum + (inv.total_profit || 0), 0);
 
         // Fetch Expenses
-        const dailyExpenses = await Expense.find({ ...queryFilter, date: todayStr });
-        const monthlyExpenses = await Expense.find({ ...queryFilter, date: new RegExp('^' + monthStr) });
+        const dailyExpenses = await Expense.find({ ...queryFilter, date: today });
+        const monthlyExpenses = await Expense.find({ ...queryFilter, date: new RegExp('^' + currentMonth) });
 
         const dailyExpenseTotal = dailyExpenses.reduce((sum, e) => sum + e.amount, 0);
         const monthlyExpenseTotal = monthlyExpenses.reduce((sum, e) => sum + e.amount, 0);
 
+        // Product Counts
+        const totalProducts = await Product.countDocuments(queryFilter);
+        const lowStockProducts = await Product.countDocuments({ ...queryFilter, $expr: { $lte: ["$quantity", { $ifNull: ["$low_stock_limit", 10] }] } });
+
         res.json({
-            dailyProfit,
+            totalBillsToday,
             totalBillsMonth,
+            dailyIncome,
             monthlyIncome,
-            monthlyProfit,
+            dailyProfit: dailyProfitRaw - dailyExpenseTotal,
+            monthlyProfit: monthlyProfitRaw - monthlyExpenseTotal,
             totalProducts,
             lowStockProducts
         });
