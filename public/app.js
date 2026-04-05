@@ -651,6 +651,8 @@ async function loadDashboard() {
         document.getElementById('dash-bills-month').textContent = stats.totalBillsMonth;
         document.getElementById('dash-income-today').textContent = formatCurrency(stats.dailyIncome);
         document.getElementById('dash-income-month').textContent = formatCurrency(stats.monthlyIncome);
+        document.getElementById('dash-expenses-today').textContent = formatCurrency(stats.dailyExpenseTotal || 0);
+        document.getElementById('dash-expenses-month').textContent = formatCurrency(stats.monthlyExpenseTotal || 0);
         document.getElementById('dash-profit-today').textContent = formatCurrency(stats.dailyProfit);
         document.getElementById('dash-profit-month').textContent = formatCurrency(stats.monthlyProfit);
         document.getElementById('dash-total-products').textContent = stats.totalProducts;

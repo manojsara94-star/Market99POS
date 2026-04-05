@@ -179,6 +179,8 @@ app.get('/api/dashboard', async (req, res) => {
             totalBillsMonth,
             dailyIncome,
             monthlyIncome,
+            dailyExpenseTotal,
+            monthlyExpenseTotal,
             dailyProfit: dailyProfitRaw - dailyExpenseTotal,
             monthlyProfit: monthlyProfitRaw - monthlyExpenseTotal,
             totalProducts,
