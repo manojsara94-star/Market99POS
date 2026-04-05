@@ -163,14 +163,16 @@
                             </div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-icon income" style="background:var(--success);color:white;"><i class='bx bx-trending-up'></i></div>
+                            <div class="stat-icon income" style="background:var(--success);color:white;"><i
+                                    class='bx bx-trending-up'></i></div>
                             <div class="stat-details">
                                 <h3>Daily Profit</h3>
                                 <p class="stat-value" id="dash-profit-today">0.00</p>
                             </div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-icon income" style="background:var(--success);color:white;"><i class='bx bx-line-chart'></i></div>
+                            <div class="stat-icon income" style="background:var(--success);color:white;"><i
+                                    class='bx bx-line-chart'></i></div>
                             <div class="stat-details">
                                 <h3>Monthly Profit</h3>
                                 <p class="stat-value" id="dash-profit-month">0.00</p>
@@ -248,13 +250,21 @@
                                 <!-- Populated via JS -->
                             </div>
                             <div class="bill-summary">
+                                <div class="summary-row" id="pos-discount-row" style="color:var(--danger); display:none;">
+                                    <span>Total Discount</span>
+                                    <span>-<span id="pos-total-discount">0.00</span></span>
+                                </div>
                                 <div class="summary-row total">
                                     <span>TOTAL</span>
                                     <span id="pos-total-amount">0.00</span>
                                 </div>
                                 <div style="display: flex; gap: 10px; margin-top: 15px;">
-                                    <button class="btn btn-block" id="btn-submit-bill" style="margin: 0; background-color: var(--success, #2ecc71); color: #ffffff; border: none;">Submit Only</button>
-                                    <button class="btn btn-primary btn-block" id="btn-submit-print" style="margin: 0; flex: 2;"><i class='bx bx-printer'></i> Submit & Print</button>
+                                    <button class="btn btn-block" id="btn-submit-bill"
+                                        style="margin: 0; background-color: var(--success, #2ecc71); color: #ffffff; border: none;">Submit
+                                        Only</button>
+                                    <button class="btn btn-primary btn-block" id="btn-submit-print"
+                                        style="margin: 0; flex: 2;"><i class='bx bx-printer'></i> Submit &
+                                        Print</button>
                                 </div>
                             </div>
                         </div>
@@ -413,14 +423,16 @@
                                 <input type="text" id="product-name" class="form-control" required>
                             </div>
                             <div style="flex: 1;">
-                                <label>Category</label>
-                                <input type="text" id="product-category" class="form-control" list="category-list" placeholder="General">
-                                <datalist id="category-list"></datalist>
+                                <label>Category <a href="#" id="btn-manage-categories" style="font-size:11px; float:right; color:var(--primary);text-decoration:none;">Add New</a></label>
+                                <select id="product-category" class="form-control" required>
+                                    <option value="">Select Category</option>
+                                </select>
                             </div>
                         </div>
                         <div class="form-group">
                             <label>Description / Details</label>
-                            <textarea id="product-description" class="form-control" rows="2" placeholder="Optional details..."></textarea>
+                            <textarea id="product-description" class="form-control" rows="2"
+                                placeholder="Optional details..."></textarea>
                         </div>
                         <div class="form-group" style="display: flex; gap: 10px;">
                             <div style="flex: 1;">
@@ -509,9 +521,13 @@
                             </tbody>
                         </table>
                         <p>----------------------------</p>
+                        <div class="receipt-total" id="receipt-discount-row" style="display:none; font-size:12px; margin-bottom:5px;">
+                            <span>Discount:</span>
+                            <span>-<span id="receipt-total-discount"></span></span>
+                        </div>
                         <div class="receipt-total">
                             <span>TOTAL:</span>
-                            <span id="receipt-total-amount"></span>
+                            <span id="receipt-total-amount">0.00</span>
                         </div>
                         <div class="receipt-footer">
                             <p>Thank You!</p>
@@ -526,9 +542,28 @@
                 </div>
             </div>
         </div>
-    </div> <!-- End of app-wrapper -->
 
-    <script src="/app.js"></script>
+        <!-- Category Modal -->
+        <div class="modal-overlay" id="category-modal-overlay">
+            <div class="modal" id="category-modal" style="max-width:400px;">
+                <div class="modal-header">
+                    <h3>Add New Category</h3>
+                    <button class="close-btn" id="btn-close-category-modal"><i class='bx bx-x'></i></button>
+                </div>
+                <div class="modal-body">
+                    <form id="category-form">
+                        <div class="form-group">
+                            <label>Category Name</label>
+                            <input type="text" id="new-category-name" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Save Category</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="/app.js"></script>
 </body>
 
 </html>

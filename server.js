@@ -212,6 +212,40 @@ app.get('/api/dashboard/low-stock', async (req, res) => {
     }
 });
 
+// ==== CATEGORIES API ====
+
+app.get('/api/categories', async (req, res) => {
+    try {
+        const queryFilter = req.user.role === 'admin' ? {} : { user_id: req.user._id };
+        const categories = await db.Category.find(queryFilter).sort({ name: 1 });
+        res.json(categories.map(c => ({ id: c._id.toString(), name: c.name })));
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/categories', async (req, res) => {
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ error: 'Name is required' });
+    try {
+        const category = await db.Category.create({ user_id: req.user._id, name });
+        res.status(201).json({ id: category._id.toString(), name: category.name });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/categories/:id', async (req, res) => {
+    try {
+        const queryFilter = req.user.role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, user_id: req.user._id };
+        const category = await db.Category.findOneAndDelete(queryFilter);
+        if (!category) return res.status(404).json({ error: 'Category not found' });
+        res.json({ message: 'Category deleted successfully' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
 // ==== INVENTORY (PRODUCTS) API ====
 
 app.get('/api/products', async (req, res) => {
@@ -352,9 +386,9 @@ app.get('/api/invoices/:id', async (req, res) => {
 });
 
 app.post('/api/invoices', async (req, res) => {
-    const { items, total_amount } = req.body;
-    if (!items || items.length === 0 || !total_amount) {
-        return res.status(400).json({ error: 'Invalid invoice data' });
+    const { items, total_amount, total_discount } = req.body;
+    if (!items || items.length === 0) {
+        return res.status(400).json({ error: 'Invoice must have items' });
     }
 
     const today = new Date();
@@ -364,13 +398,16 @@ app.post('/api/invoices', async (req, res) => {
 
     const formattedItems = items.map(item => {
         const itemCost = item.cost || 0;
-        const itemProfit = (item.price - itemCost) * item.quantity;
+        const itemDiscount = item.discount || 0;
+        const subtotal = (item.price * item.quantity) - itemDiscount;
+        const itemProfit = subtotal - (itemCost * item.quantity);
         return {
             product_name: item.name,
             quantity: item.quantity,
             cost: itemCost,
             price: item.price,
-            subtotal: item.quantity * item.price,
+            discount: itemDiscount,
+            subtotal: subtotal,
             profit: itemProfit
         };
     });
@@ -387,6 +424,7 @@ app.post('/api/invoices', async (req, res) => {
             date,
             time,
             total_amount,
+            total_discount: total_discount || 0,
             total_profit,
             items: formattedItems
         });

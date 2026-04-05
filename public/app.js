@@ -197,9 +197,31 @@ function setupNavigation() {
 }
 
 function setupModals() {
+    const adminModal = document.getElementById('admin-user-modal');
+    const categoryModalOverlay = document.getElementById('category-modal-overlay');
+
+    window.showModal = function (m) {
+        if (m === categoryModalOverlay) {
+            m.classList.add('active');
+        } else {
+            document.getElementById('modal-overlay').classList.add('active');
+            m.classList.add('active');
+        }
+    };
+
+    window.hideModal = function () {
+        document.getElementById('modal-overlay').classList.remove('active');
+        document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+    };
+
+    window.hideCategoryModal = function () {
+        categoryModalOverlay.classList.remove('active');
+    };
+
     document.getElementById('btn-close-modal').addEventListener('click', hideModal);
     document.getElementById('btn-close-invoice-modal').addEventListener('click', hideModal);
     document.getElementById('btn-close-admin-modal').addEventListener('click', hideModal);
+    document.getElementById('btn-close-category-modal').addEventListener('click', hideCategoryModal);
 
     // Add product
     document.getElementById('btn-add-product').addEventListener('click', () => {
@@ -295,6 +317,30 @@ function setupModals() {
         }
     });
 
+    // Handle Category Modal
+    document.getElementById('btn-manage-categories').addEventListener('click', (e) => {
+        e.preventDefault();
+        document.getElementById('category-form').reset();
+        showModal(document.getElementById('category-modal-overlay'));
+    });
+
+    document.getElementById('category-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('new-category-name').value;
+        try {
+            await fetchAuth(`${API_BASE}/categories`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name })
+            });
+            hideCategoryModal();
+            loadCategories();
+        } catch (err) {
+            console.error(err);
+            alert('Error creating category');
+        }
+    });
+
     // Print Receipt logic
     document.getElementById('btn-print-receipt').addEventListener('click', () => {
         window.print();
@@ -322,17 +368,6 @@ function setupModals() {
             alert('Error updating user');
         }
     });
-}
-
-function showModal(modal) {
-    modalOverlay.classList.add('active');
-    document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
-    modal.classList.add('active');
-}
-
-function hideModal() {
-    modalOverlay.classList.remove('active');
-    document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
 }
 
 // ==== UTILS ====
@@ -435,21 +470,32 @@ async function loadDashboard() {
 // ==== INVENTORY ====
 let adminInventoryFilter = null;
 
+let cachedCategories = [];
+
+async function loadCategories() {
+    try {
+        const res = await fetchAuth(`${API_BASE}/categories`);
+        cachedCategories = await res.json();
+
+        const sel = document.getElementById('product-category');
+        const oldVal = sel.value;
+        sel.innerHTML = '<option value="">Select Category</option>';
+        cachedCategories.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.name;
+            opt.textContent = c.name;
+            sel.appendChild(opt);
+        });
+        if (oldVal) sel.value = oldVal;
+    } catch (err) { console.error(err); }
+}
+
 async function loadInventory() {
     try {
+        await loadCategories();
         const res = await fetchAuth(`${API_BASE}/products`);
         products = await res.json();
         checkLowStockAlerts(products);
-
-        // Dynamically populate category datalist
-        const categories = [...new Set(products.map(p => p.category).filter(c => c))];
-        const dataList = document.getElementById('category-list');
-        dataList.innerHTML = '';
-        categories.forEach(cat => {
-            const opt = document.createElement('option');
-            opt.value = cat;
-            dataList.appendChild(opt);
-        });
 
         const tbody = document.querySelector('#inventory-table tbody');
         tbody.innerHTML = '';
@@ -518,7 +564,19 @@ function editProduct(id) {
         document.getElementById('product-id').value = p.id;
         document.getElementById('product-name').value = p.name;
         document.getElementById('product-description').value = p.description || '';
-        document.getElementById('product-category').value = p.category || 'General';
+
+        // Set category if it exists in select options
+        const catSelect = document.getElementById('product-category');
+        catSelect.value = p.category || '';
+        if (p.category && !catSelect.value) {
+            // Category might have been deleted, add temporary option
+            const opt = document.createElement('option');
+            opt.value = p.category;
+            opt.textContent = p.category + " (Deprecated)";
+            catSelect.appendChild(opt);
+            catSelect.value = p.category;
+        }
+
         document.getElementById('product-qty').value = p.quantity;
         document.getElementById('product-low-stock').value = p.low_stock_limit !== undefined ? p.low_stock_limit : 10;
         document.getElementById('product-cost').value = p.cost || 0;
@@ -611,6 +669,7 @@ function addToBill(product) {
             name: product.name,
             cost: product.cost || 0,
             price: product.price,
+            discount: 0,
             quantity: 1,
             maxQty: product.quantity
         });
@@ -637,17 +696,25 @@ function updateBillUI() {
     const itemsContainer = document.getElementById('pos-bill-items');
     itemsContainer.innerHTML = '';
     let total = 0;
+    let totalDiscount = 0;
 
     currentBill.forEach(item => {
-        const amount = item.price * item.quantity;
+        const itemDiscount = parseFloat(item.discount) || 0;
+        const amount = (item.price * item.quantity) - itemDiscount;
         total += amount;
+        totalDiscount += itemDiscount;
 
         const div = document.createElement('div');
         div.className = 'bill-item';
         div.innerHTML = `
             <div class="bill-item-details">
                 <h4>${item.name}</h4>
-                <p>${formatCurrency(item.price)} x ${item.quantity}</p>
+                <p>
+                    ${formatCurrency(item.price)} x ${item.quantity}
+                </p>
+                <div style="margin-top:4px; font-size:12px; display:flex; align-items:center; gap:5px;">
+                    Disc: <input type="number" min="0" value="${itemDiscount}" onchange="updateItemDiscount('${item.id}', this.value)" style="width:60px; padding:2px; font-size:12px; border:1px solid var(--border); border-radius:4px;">
+                </div>
             </div>
             <div class="bill-item-actions">
                 <div class="qty-control">
@@ -662,7 +729,23 @@ function updateBillUI() {
     });
 
     document.getElementById('pos-total-amount').textContent = formatCurrency(total);
+
+    const discountRow = document.getElementById('pos-discount-row');
+    if (totalDiscount > 0) {
+        discountRow.style.display = 'flex';
+        document.getElementById('pos-total-discount').textContent = formatCurrency(totalDiscount);
+    } else {
+        discountRow.style.display = 'none';
+    }
 }
+
+window.updateItemDiscount = function (id, val) {
+    const item = currentBill.find(i => i.id === id);
+    if (item) {
+        item.discount = parseFloat(val) || 0;
+        updateBillUI();
+    }
+};
 
 async function submitCurrentBill(autoPrint) {
     if (currentBill.length === 0) {
@@ -670,11 +753,13 @@ async function submitCurrentBill(autoPrint) {
         return;
     }
 
-    let total = currentBill.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    let total = currentBill.reduce((sum, item) => sum + ((item.price * item.quantity) - (item.discount || 0)), 0);
+    let totalDiscount = currentBill.reduce((sum, item) => sum + (item.discount || 0), 0);
 
     const payload = {
         items: currentBill,
-        total_amount: total
+        total_amount: total,
+        total_discount: totalDiscount
     };
 
     try {
@@ -720,7 +805,8 @@ function showInvoicePrintout(invoice, autoPrint = true) {
 
     let total = 0;
     invoice.items.forEach(item => {
-        const amt = item.price * item.quantity;
+        const itemDiscount = item.discount || 0;
+        const amt = (item.price * item.quantity) - itemDiscount;
         total += amt;
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -731,6 +817,14 @@ function showInvoicePrintout(invoice, autoPrint = true) {
         `;
         tbody.appendChild(tr);
     });
+
+    const discountRow = document.getElementById('receipt-discount-row');
+    if (invoice.total_discount > 0) {
+        discountRow.style.display = 'flex';
+        document.getElementById('receipt-total-discount').textContent = invoice.total_discount.toFixed(2);
+    } else {
+        discountRow.style.display = 'none';
+    }
 
     document.getElementById('receipt-total-amount').textContent = total.toFixed(2);
 

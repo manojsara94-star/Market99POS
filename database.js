@@ -51,6 +51,7 @@ const InvoiceItemSchema = new mongoose.Schema({
     quantity: { type: Number, required: true },
     cost: { type: Number, default: 0.0 },
     price: { type: Number, required: true },
+    discount: { type: Number, default: 0.0 },
     subtotal: { type: Number, required: true },
     profit: { type: Number, default: 0.0 }
 });
@@ -61,14 +62,21 @@ const InvoiceSchema = new mongoose.Schema({
     date: { type: String, required: true }, // Format: YYYY-MM-DD
     time: { type: String, required: true }, // Format: HH:MM
     total_amount: { type: Number, default: 0.0 },
+    total_discount: { type: Number, default: 0.0 },
     total_profit: { type: Number, default: 0.0 },
     items: [InvoiceItemSchema]
+});
+
+const CategorySchema = new mongoose.Schema({
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    name: { type: String, required: true }
 });
 
 // -- MODELS --
 const User = mongoose.model('User', UserSchema);
 const Product = mongoose.model('Product', ProductSchema);
 const Invoice = mongoose.model('Invoice', InvoiceSchema);
+const Category = mongoose.model('Category', CategorySchema);
 
 // Create default admin user
 const initializeDatabase = async () => {
@@ -96,5 +104,6 @@ module.exports = {
     initializeDatabase,
     User,
     Product,
-    Invoice
+    Invoice,
+    Category
 };
