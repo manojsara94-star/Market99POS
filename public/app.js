@@ -1017,10 +1017,21 @@ async function submitCurrentBill(autoPrint) {
         currentBill = [];
         updateBillUI();
 
-        // Reload products cache
+        // Reload products & customers cache
         fetchAuth(`${API_BASE}/products`).then(r => r.json()).then(p => {
             products = p;
             checkLowStockAlerts(products);
+        });
+
+        fetchAuth(`${API_BASE}/customers`).then(r => r.json()).then(clist => {
+            customersList = clist;
+            const cDatalist = document.getElementById('pos-customer-list');
+            cDatalist.innerHTML = '';
+            customersList.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.name;
+                cDatalist.appendChild(opt);
+            });
         });
 
     } catch (err) {

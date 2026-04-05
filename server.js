@@ -521,22 +521,7 @@ app.post('/api/invoices', async (req, res) => {
             items: formattedItems
         });
 
-        // Auto-save the customer profile for next uses if name is given
-        if (customer_name) {
-            const queryConf = { user_id: req.user._id, name: customer_name };
-            if (customer_contact) queryConf.contact = customer_contact;
-            const existingCustomer = await Customer.findOne(queryConf);
-            if (!existingCustomer) {
-                await Customer.create({ user_id: req.user._id, name: customer_name, contact: customer_contact || '', address: customer_address || '' });
-            } else if (customer_address && !existingCustomer.address) {
-                existingCustomer.address = customer_address;
-                await existingCustomer.save();
-            }
-        }
-
-        res.status(201).json({ invoice });
-        
-        // Update product stock manually in series or parallel
+        // Update product stock manually
         for (const item of items) {
             await Product.findOneAndUpdate(
                 { name: item.name, user_id: req.user._id },
@@ -544,17 +529,32 @@ app.post('/api/invoices', async (req, res) => {
             );
         }
 
-        res.status(201).json({ 
-            message: 'Invoice created successfully',
-            invoice: {
-                id: invoice._id.toString(),
-                invoice_number,
-                date,
-                time,
-                total_amount,
-                items: formattedItems
+        // Auto-save/Update the customer profile
+        if (customer_name) {
+            let existingCustomer = await Customer.findOne({ user_id: req.user._id, name: customer_name });
+            if (!existingCustomer) {
+                await Customer.create({ 
+                    user_id: req.user._id, 
+                    name: customer_name, 
+                    contact: customer_contact || '', 
+                    address: customer_address || '' 
+                });
+            } else {
+                // Update profile if new data is provided
+                let updated = false;
+                if (customer_contact && existingCustomer.contact !== customer_contact) {
+                    existingCustomer.contact = customer_contact;
+                    updated = true;
+                }
+                if (customer_address && existingCustomer.address !== customer_address) {
+                    existingCustomer.address = customer_address;
+                    updated = true;
+                }
+                if (updated) await existingCustomer.save();
             }
-        });
+        }
+
+        res.status(201).json({ invoice });
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
