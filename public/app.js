@@ -676,6 +676,15 @@ async function loadDashboard() {
         document.getElementById('dash-total-products').textContent = stats.totalProducts;
         document.getElementById('dash-low-stock').textContent = stats.lowStockProducts;
 
+        // Show/Hide Low Stock Alert Banner
+        const alertBanner = document.getElementById('low-stock-alert-banner');
+        if (stats.lowStockProducts > 0) {
+            alertBanner.classList.add('active');
+            document.getElementById('low-stock-alert-text').textContent = `You have ${stats.lowStockProducts} item(s) running below the minimum quantity threshold.`;
+        } else {
+            alertBanner.classList.remove('active');
+        }
+
         // Load low stock table
         const resAlerts = await fetchAuth(`${API_BASE}/dashboard/low-stock`);
         const alerts = await resAlerts.json();

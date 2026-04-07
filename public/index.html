@@ -158,6 +158,22 @@
             <div class="views-container">
                 <!-- Dashboard View -->
                 <section id="dashboard-view" class="view active">
+                    <!-- Low Stock Alert Banner -->
+                    <div id="low-stock-alert-banner" class="alert-banner">
+                        <div class="alert-content">
+                            <div class="alert-icon">
+                                <i class='bx bxs-error-alt'></i>
+                            </div>
+                            <div class="alert-message">
+                                <h4>Low Stock Warning</h4>
+                                <p id="low-stock-alert-text">You have 0 items running low on stock. Please check your inventory.</p>
+                            </div>
+                        </div>
+                        <a href="#" class="btn-alert-action" onclick="document.querySelector('[data-target=\'inventory-view\']').click(); return false;">
+                            Manage Stock
+                        </a>
+                    </div>
+
                     <div class="dashboard-grid">
                         <div class="stat-card">
                             <div class="stat-icon"><i class='bx bx-receipt'></i></div>
