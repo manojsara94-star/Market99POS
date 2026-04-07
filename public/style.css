@@ -639,7 +639,8 @@ body {
     .receipt-header, .receipt-footer { text-align: center; }
     .receipt-table { width: 100%; border-collapse: collapse; margin-block: 10px; }
     .receipt-table th, .receipt-table td { text-align: left; padding: 2px 0; vertical-align: top; }
-    .receipt-table th:nth-child(n+3), .receipt-table td:nth-child(n+3) { text-align: right; }
+    .receipt-table th:nth-child(3), .receipt-table td:nth-child(3) { text-align: center; }
+    .receipt-table th:nth-child(n+4), .receipt-table td:nth-child(n+4) { text-align: right; }
     .receipt-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-block: 10px; }
 }
 
@@ -647,7 +648,8 @@ body {
 .receipt { font-family: monospace; }
 .receipt-header, .receipt-footer { text-align: center; margin-block: 10px; }
 .receipt-table { width: 100%; margin-block: 10px; border-collapse: collapse; }
-.receipt-table th:nth-child(n+3), .receipt-table td:nth-child(n+3) { text-align: right; }
+.receipt-table th:nth-child(3), .receipt-table td:nth-child(3) { text-align: center; }
+.receipt-table th:nth-child(n+4), .receipt-table td:nth-child(n+4) { text-align: right; }
 .receipt-total { display: flex; justify-content: space-between; font-weight: bold; margin-block: 10px; font-size: 16px; }
 
 /* Authentication UI */
