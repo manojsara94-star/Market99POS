@@ -670,12 +670,13 @@ app.get('/api/user/settings', async (req, res) => {
 });
 
 app.put('/api/user/settings', async (req, res) => {
-    const { business_name, password, logo } = req.body;
+    const { business_name, password, logo, whatsapp_number } = req.body;
     try {
         const updateData = {};
         if (business_name) updateData.business_name = business_name;
         if (password) updateData.password = password;
         if (logo !== undefined) updateData.logo = logo;
+        if (whatsapp_number !== undefined) updateData.whatsapp_number = whatsapp_number;
 
         if (Object.keys(updateData).length === 0) {
             return res.status(400).json({ error: 'No data to update' });

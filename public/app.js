@@ -4,7 +4,8 @@ let authToken = localStorage.getItem('pos_token') || null;
 let currentBusiness = localStorage.getItem('pos_business') || '';
 let currentRole = localStorage.getItem('pos_role') || 'user';
 let currentLogo = localStorage.getItem('pos_logo') || null;
-let currentLogoBase64 = null;
+let currentLogoBase64 = localStorage.getItem('pos_logo') || null;
+let currentWhatsApp = localStorage.getItem('pos_whatsapp') || '';
 
 // ==== AUTH LOGIC ====
 const authOverlay = document.getElementById('auth-overlay');
@@ -37,7 +38,7 @@ loginForm.addEventListener('submit', async (e) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Login failed');
 
-        loginSuccess(data.token, data.business_name, data.role, data.logo);
+        loginSuccess(data.token, data.business_name, data.role, data.logo, data.whatsapp_number);
     } catch (err) { alert(err.message); }
 });
 
@@ -57,18 +58,20 @@ registerForm.addEventListener('submit', async (e) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Registration failed');
 
-        loginSuccess(data.token, data.business_name, data.role, data.logo);
+        loginSuccess(data.token, data.business_name, data.role, data.logo, data.whatsapp_number);
     } catch (err) { alert(err.message); }
 });
 
-function loginSuccess(token, businessName, role = 'user', logo = null) {
+function loginSuccess(token, businessName, role = 'user', logo = null, whatsapp = '') {
     authToken = token;
     currentBusiness = businessName;
     currentRole = role;
     currentLogo = logo;
+    currentWhatsApp = whatsapp;
     localStorage.setItem('pos_token', token);
     localStorage.setItem('pos_business', businessName);
     localStorage.setItem('pos_role', role);
+    localStorage.setItem('pos_whatsapp', whatsapp);
     if (logo) localStorage.setItem('pos_logo', logo);
     else localStorage.removeItem('pos_logo');
     checkAuth();
@@ -79,10 +82,12 @@ document.getElementById('btn-logout').addEventListener('click', () => {
     currentBusiness = '';
     currentRole = 'user';
     currentLogo = null;
+    currentWhatsApp = '';
     localStorage.removeItem('pos_token');
     localStorage.removeItem('pos_business');
     localStorage.removeItem('pos_role');
     localStorage.removeItem('pos_logo');
+    localStorage.removeItem('pos_whatsapp');
     checkAuth();
 });
 
@@ -1388,11 +1393,14 @@ async function loadSettings() {
 
         currentBusiness = user.business_name;
         currentLogo = user.logo;
+        currentWhatsApp = user.whatsapp_number || '';
         localStorage.setItem('pos_business', currentBusiness);
+        localStorage.setItem('pos_whatsapp', currentWhatsApp);
         if (currentLogo) localStorage.setItem('pos_logo', currentLogo);
         else localStorage.removeItem('pos_logo');
 
         document.getElementById('settings-business-name').value = currentBusiness;
+        document.getElementById('settings-contact-number').value = currentWhatsApp;
         document.getElementById('business-name-display').textContent = currentBusiness;
 
         const preview = document.getElementById('settings-logo-preview');
@@ -1461,13 +1469,14 @@ document.getElementById('btn-remove-logo').addEventListener('click', () => {
 document.getElementById('settings-business-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const business_name = document.getElementById('settings-business-name').value.trim();
+    const whatsapp_number = document.getElementById('settings-contact-number').value.trim();
     if (!business_name) return;
 
     try {
         const res = await fetchAuth(`${API_BASE}/user/settings`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ business_name, logo: currentLogoBase64 })
+            body: JSON.stringify({ business_name, logo: currentLogoBase64, whatsapp_number })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to update settings');
@@ -1475,7 +1484,9 @@ document.getElementById('settings-business-form').addEventListener('submit', asy
         // Update local state
         currentBusiness = data.business_name;
         currentLogo = data.logo;
+        currentWhatsApp = data.whatsapp_number || '';
         localStorage.setItem('pos_business', currentBusiness);
+        localStorage.setItem('pos_whatsapp', currentWhatsApp);
         if (currentLogo) localStorage.setItem('pos_logo', currentLogo);
         else localStorage.removeItem('pos_logo');
 
