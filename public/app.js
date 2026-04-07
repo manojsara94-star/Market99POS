@@ -1018,7 +1018,7 @@ function updateBillUI() {
                     <span>${item.quantity}</span>
                     <button class="qty-btn" onclick="updateBillQuantity('${item.id}', 1)">+</button>
                 </div>
-                <div class="item-total">${formatCurrency(amount)}</div>
+                <div class="item-total">${formatCurrency(subtotal - itemDiscount)}</div>
             </div>
         `;
         itemsContainer.appendChild(div);
