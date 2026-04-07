@@ -642,6 +642,31 @@ app.post('/api/marketplace/enable', async (req, res) => {
     }
 });
 
+// ==== USER SETTINGS API ====
+
+app.put('/api/user/settings', async (req, res) => {
+    const { business_name, password } = req.body;
+    try {
+        const updateData = {};
+        if (business_name) updateData.business_name = business_name;
+        if (password) updateData.password = password;
+
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ error: 'No data to update' });
+        }
+
+        const user = await User.findByIdAndUpdate(req.user._id, updateData, { new: true });
+        if (!user) return res.status(404).json({ error: 'User not found' });
+
+        res.json({ 
+            message: 'Settings updated successfully', 
+            business_name: user.business_name 
+        });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
 app.get('/api/public/store/:business_name', async (req, res) => {
     try {
         const storeOwner = await User.findOne({ business_name: req.params.business_name });

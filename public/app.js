@@ -196,6 +196,7 @@ function setupNavigation() {
             if (target === 'invoices-view') loadInvoices();
             if (target === 'reports-view') loadReports();
             if (target === 'admin-view') loadAdminUsers();
+            if (target === 'settings-view') loadSettings();
         });
     });
 
@@ -1338,5 +1339,63 @@ document.querySelector('#admin-users-table tbody').addEventListener('click', asy
                 loadAdminUsers();
             } catch (err) { console.error(err); }
         }
+    }
+});
+
+// ==== SETTINGS ====
+async function loadSettings() {
+    document.getElementById('settings-business-name').value = currentBusiness;
+}
+
+document.getElementById('settings-business-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const business_name = document.getElementById('settings-business-name').value.trim();
+    if (!business_name) return;
+
+    try {
+        const res = await fetchAuth(`${API_BASE}/user/settings`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ business_name })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to update business name');
+
+        // Update local state
+        currentBusiness = data.business_name;
+        localStorage.setItem('pos_business', currentBusiness);
+        document.getElementById('business-name-display').textContent = currentBusiness;
+        
+        alert('Business name updated successfully!');
+    } catch (err) {
+        console.error(err);
+        alert(err.message);
+    }
+});
+
+document.getElementById('settings-password-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const newPassword = document.getElementById('settings-new-password').value;
+    const confirmPassword = document.getElementById('settings-confirm-password').value;
+
+    if (newPassword !== confirmPassword) {
+        alert('Passwords do not match!');
+        return;
+    }
+
+    try {
+        const res = await fetchAuth(`${API_BASE}/user/settings`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: newPassword })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to update password');
+
+        document.getElementById('settings-password-form').reset();
+        alert('Password updated successfully!');
+    } catch (err) {
+        console.error(err);
+        alert(err.message);
     }
 });
