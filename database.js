@@ -31,6 +31,7 @@ const UserSchema = new mongoose.Schema({
     password: { type: String, required: true },
     business_name: { type: String, required: true },
     whatsapp_number: { type: String },
+    business_address: { type: String },
     marketplace_enabled: { type: Boolean, default: false },
     role: { type: String, default: 'user' },
     logo: { type: String }

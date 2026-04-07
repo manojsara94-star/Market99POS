@@ -38,7 +38,9 @@ app.post('/api/auth/register', async (req, res) => {
             token: user._id.toString(), 
             business_name: user.business_name, 
             role: user.role,
-            logo: user.logo
+            logo: user.logo,
+            whatsapp_number: user.whatsapp_number,
+            business_address: user.business_address
         });
     } catch (err) {
         return res.status(500).json({ error: err.message });
@@ -443,7 +445,7 @@ app.get('/api/invoices', async (req, res) => {
 
     try {
         const invoices = await Invoice.find(query)
-            .populate('user_id', 'business_name logo whatsapp_number')
+            .populate('user_id', 'business_name logo whatsapp_number business_address')
             .sort({ date: -1, time: -1 });
         
         // Map _id to id for frontend
@@ -455,7 +457,7 @@ app.get('/api/invoices', async (req, res) => {
             total_amount: inv.total_amount,
             owner_name: inv.user_id ? inv.user_id.business_name : 'Unknown',
             owner_logo: inv.user_id ? inv.user_id.logo : null,
-            owner_info: inv.user_id ? inv.user_id.whatsapp_number : ''
+            owner_info: inv.user_id ? inv.user_id.business_address || inv.user_id.whatsapp_number : ''
         }));
         
         res.json(mappedInvoices);
@@ -467,7 +469,7 @@ app.get('/api/invoices', async (req, res) => {
 app.get('/api/invoices/:id', async (req, res) => {
     try {
         const queryFilter = req.user.role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, user_id: req.user._id };
-        const invoice = await Invoice.findOne(queryFilter).populate('user_id', 'business_name logo whatsapp_number');
+        const invoice = await Invoice.findOne(queryFilter).populate('user_id', 'business_name logo whatsapp_number business_address');
         if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
         
         const response = {
@@ -478,7 +480,7 @@ app.get('/api/invoices/:id', async (req, res) => {
             total_amount: invoice.total_amount,
             owner_name: invoice.user_id ? invoice.user_id.business_name : '',
             owner_logo: invoice.user_id ? invoice.user_id.logo : null,
-            owner_info: invoice.user_id ? invoice.user_id.whatsapp_number : '',
+            owner_info: invoice.user_id ? invoice.user_id.business_address || invoice.user_id.whatsapp_number : '',
             items: invoice.items.map(item => ({
                 id: item._id ? item._id.toString() : null,
                 product_name: item.product_name,
@@ -579,7 +581,7 @@ app.post('/api/invoices', async (req, res) => {
                 id: invoice._id.toString(),
                 owner_name: req.user.business_name,
                 owner_logo: req.user.logo,
-                owner_info: req.user.whatsapp_number
+                owner_info: req.user.business_address || req.user.whatsapp_number
             }
         });
     } catch (err) {
@@ -670,13 +672,14 @@ app.get('/api/user/settings', async (req, res) => {
 });
 
 app.put('/api/user/settings', async (req, res) => {
-    const { business_name, password, logo, whatsapp_number } = req.body;
+    const { business_name, password, logo, whatsapp_number, business_address } = req.body;
     try {
         const updateData = {};
         if (business_name) updateData.business_name = business_name;
         if (password) updateData.password = password;
         if (logo !== undefined) updateData.logo = logo;
         if (whatsapp_number !== undefined) updateData.whatsapp_number = whatsapp_number;
+        if (business_address !== undefined) updateData.business_address = business_address;
 
         if (Object.keys(updateData).length === 0) {
             return res.status(400).json({ error: 'No data to update' });
@@ -688,7 +691,9 @@ app.put('/api/user/settings', async (req, res) => {
         res.json({ 
             message: 'Settings updated successfully', 
             business_name: user.business_name,
-            logo: user.logo
+            logo: user.logo,
+            whatsapp_number: user.whatsapp_number,
+            business_address: user.business_address
         });
     } catch (err) {
         return res.status(500).json({ error: err.message });

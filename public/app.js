@@ -6,6 +6,7 @@ let currentRole = localStorage.getItem('pos_role') || 'user';
 let currentLogo = localStorage.getItem('pos_logo') || null;
 let currentLogoBase64 = localStorage.getItem('pos_logo') || null;
 let currentWhatsApp = localStorage.getItem('pos_whatsapp') || '';
+let currentAddress = localStorage.getItem('pos_address') || '';
 
 // ==== AUTH LOGIC ====
 const authOverlay = document.getElementById('auth-overlay');
@@ -38,7 +39,7 @@ loginForm.addEventListener('submit', async (e) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Login failed');
 
-        loginSuccess(data.token, data.business_name, data.role, data.logo, data.whatsapp_number);
+        loginSuccess(data.token, data.business_name, data.role, data.logo, data.whatsapp_number, data.business_address);
     } catch (err) { alert(err.message); }
 });
 
@@ -58,20 +59,22 @@ registerForm.addEventListener('submit', async (e) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Registration failed');
 
-        loginSuccess(data.token, data.business_name, data.role, data.logo, data.whatsapp_number);
+        loginSuccess(data.token, data.business_name, data.role, data.logo, data.whatsapp_number, data.business_address);
     } catch (err) { alert(err.message); }
 });
 
-function loginSuccess(token, businessName, role = 'user', logo = null, whatsapp = '') {
+function loginSuccess(token, businessName, role = 'user', logo = null, whatsapp = '', address = '') {
     authToken = token;
     currentBusiness = businessName;
     currentRole = role;
     currentLogo = logo;
     currentWhatsApp = whatsapp;
+    currentAddress = address;
     localStorage.setItem('pos_token', token);
     localStorage.setItem('pos_business', businessName);
     localStorage.setItem('pos_role', role);
     localStorage.setItem('pos_whatsapp', whatsapp);
+    localStorage.setItem('pos_address', address);
     if (logo) localStorage.setItem('pos_logo', logo);
     else localStorage.removeItem('pos_logo');
     checkAuth();
@@ -83,11 +86,13 @@ document.getElementById('btn-logout').addEventListener('click', () => {
     currentRole = 'user';
     currentLogo = null;
     currentWhatsApp = '';
+    currentAddress = '';
     localStorage.removeItem('pos_token');
     localStorage.removeItem('pos_business');
     localStorage.removeItem('pos_role');
     localStorage.removeItem('pos_logo');
     localStorage.removeItem('pos_whatsapp');
+    localStorage.removeItem('pos_address');
     checkAuth();
 });
 
@@ -1092,7 +1097,7 @@ function showInvoicePrintout(invoice, autoPrint = true) {
     if (invoice.owner_info) {
         businessInfoEl.textContent = invoice.owner_info;
     } else {
-        businessInfoEl.textContent = "";
+        businessInfoEl.textContent = currentAddress || currentWhatsApp || "";
     }
 
     document.getElementById('receipt-no').textContent = invoice.invoice_number;
@@ -1394,13 +1399,16 @@ async function loadSettings() {
         currentBusiness = user.business_name;
         currentLogo = user.logo;
         currentWhatsApp = user.whatsapp_number || '';
+        currentAddress = user.business_address || '';
         localStorage.setItem('pos_business', currentBusiness);
         localStorage.setItem('pos_whatsapp', currentWhatsApp);
+        localStorage.setItem('pos_address', currentAddress);
         if (currentLogo) localStorage.setItem('pos_logo', currentLogo);
         else localStorage.removeItem('pos_logo');
 
         document.getElementById('settings-business-name').value = currentBusiness;
         document.getElementById('settings-contact-number').value = currentWhatsApp;
+        document.getElementById('settings-business-address').value = currentAddress;
         document.getElementById('business-name-display').textContent = currentBusiness;
 
         const preview = document.getElementById('settings-logo-preview');
@@ -1470,13 +1478,14 @@ document.getElementById('settings-business-form').addEventListener('submit', asy
     e.preventDefault();
     const business_name = document.getElementById('settings-business-name').value.trim();
     const whatsapp_number = document.getElementById('settings-contact-number').value.trim();
+    const business_address = document.getElementById('settings-business-address').value.trim();
     if (!business_name) return;
 
     try {
         const res = await fetchAuth(`${API_BASE}/user/settings`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ business_name, logo: currentLogoBase64, whatsapp_number })
+            body: JSON.stringify({ business_name, logo: currentLogoBase64, whatsapp_number, business_address })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to update settings');
@@ -1485,8 +1494,10 @@ document.getElementById('settings-business-form').addEventListener('submit', asy
         currentBusiness = data.business_name;
         currentLogo = data.logo;
         currentWhatsApp = data.whatsapp_number || '';
+        currentAddress = data.business_address || '';
         localStorage.setItem('pos_business', currentBusiness);
         localStorage.setItem('pos_whatsapp', currentWhatsApp);
+        localStorage.setItem('pos_address', currentAddress);
         if (currentLogo) localStorage.setItem('pos_logo', currentLogo);
         else localStorage.removeItem('pos_logo');
 
