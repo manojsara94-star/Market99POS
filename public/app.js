@@ -107,6 +107,18 @@ function checkAuth() {
             document.getElementById('nav-item-admin').style.display = 'none';
         }
 
+        // Update Header Branding & Avatar
+        const brandLogoContainer = document.getElementById('header-brand-logo');
+        const userAvatar = document.getElementById('header-user-avatar');
+        
+        if (currentLogo) {
+            brandLogoContainer.innerHTML = `<img src="${currentLogo}" alt="Brand">`;
+        } else {
+            brandLogoContainer.innerHTML = `<i class='bx bxs-store' style='color:var(--text-muted);'></i>`;
+        }
+        
+        userAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentBusiness)}&background=4f46e5&color=fff`;
+
         // Re-initialize data
         loadDashboard();
     } else {
@@ -190,7 +202,8 @@ document.addEventListener('DOMContentLoaded', () => {
 function updateClock() {
     const now = new Date();
     const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-    const dateStr = now.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+    // Format as YYYY-MM-DD
+    const dateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
     clockEl.innerHTML = `<i class='bx bx-time-five'></i> <span>${timeStr}</span> <span style="opacity:0.7; font-weight:400; margin-left:10px; padding-left:10px; border-left:1px solid rgba(255,255,255,0.3);">${dateStr}</span>`;
 }
 
