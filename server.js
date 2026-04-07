@@ -457,7 +457,8 @@ app.get('/api/invoices', async (req, res) => {
             total_amount: inv.total_amount,
             owner_name: inv.user_id ? inv.user_id.business_name : 'Unknown',
             owner_logo: inv.user_id ? inv.user_id.logo : null,
-            owner_info: inv.user_id ? inv.user_id.business_address || inv.user_id.whatsapp_number : ''
+            owner_address: inv.user_id ? inv.user_id.business_address : '',
+            owner_phone: inv.user_id ? inv.user_id.whatsapp_number : ''
         }));
         
         res.json(mappedInvoices);
@@ -480,7 +481,8 @@ app.get('/api/invoices/:id', async (req, res) => {
             total_amount: invoice.total_amount,
             owner_name: invoice.user_id ? invoice.user_id.business_name : '',
             owner_logo: invoice.user_id ? invoice.user_id.logo : null,
-            owner_info: invoice.user_id ? invoice.user_id.business_address || invoice.user_id.whatsapp_number : '',
+            owner_address: invoice.user_id ? invoice.user_id.business_address : '',
+            owner_phone: invoice.user_id ? invoice.user_id.whatsapp_number : '',
             items: invoice.items.map(item => ({
                 id: item._id ? item._id.toString() : null,
                 product_name: item.product_name,
@@ -581,7 +583,8 @@ app.post('/api/invoices', async (req, res) => {
                 id: invoice._id.toString(),
                 owner_name: req.user.business_name,
                 owner_logo: req.user.logo,
-                owner_info: req.user.business_address || req.user.whatsapp_number
+                owner_address: req.user.business_address,
+                owner_phone: req.user.whatsapp_number
             }
         });
     } catch (err) {

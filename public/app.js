@@ -1093,11 +1093,15 @@ function showInvoicePrintout(invoice, autoPrint = true) {
     }
 
     document.getElementById('receipt-business-name').textContent = invoice.owner_name || currentBusiness;
-    const businessInfoEl = document.getElementById('receipt-business-info');
-    if (invoice.owner_info) {
-        businessInfoEl.textContent = invoice.owner_info;
+    document.getElementById('receipt-business-address').textContent = invoice.owner_address || currentAddress || "";
+    
+    const phone = invoice.owner_phone || currentWhatsApp || "";
+    const phoneEl = document.getElementById('receipt-business-phone');
+    if (phone) {
+        phoneEl.textContent = "Tel: " + phone;
+        phoneEl.style.display = 'block';
     } else {
-        businessInfoEl.textContent = currentAddress || currentWhatsApp || "";
+        phoneEl.style.display = 'none';
     }
 
     document.getElementById('receipt-no').textContent = invoice.invoice_number;
