@@ -655,6 +655,26 @@ app.get('/api/reports/product-sales', async (req, res) => {
     }
 });
 
+app.get('/api/reports/customer-sales', async (req, res) => {
+    try {
+        const queryMatch = req.user.role === 'admin' ? {} : { user_id: req.user._id };
+        const result = await Invoice.aggregate([
+            { $match: { ...queryMatch, customer_name: { $ne: '' } } },
+            { $group: { 
+                _id: "$customer_name", 
+                bills_count: { $sum: 1 },
+                revenue: { $sum: "$total_amount" },
+                profit: { $sum: "$total_profit" }
+            }},
+            { $project: { customer_name: "$_id", bills_count: 1, revenue: 1, profit: 1, _id: 0 } },
+            { $sort: { revenue: -1 } }
+        ]);
+        res.json(result);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
 // ==== MARKETPLACE API ====
 
 app.post('/api/marketplace/enable', async (req, res) => {

@@ -1376,9 +1376,10 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 async function loadReports() {
-    const thead = document.querySelector('#reports-table document, #reports-table thead');
+    const thead = document.querySelector('#reports-table thead');
     const tbody = document.querySelector('#reports-table tbody');
     tbody.innerHTML = '';
+    thead.innerHTML = '';
 
     try {
         if (currentReportMode === 'sales') {
@@ -1390,13 +1391,22 @@ async function loadReports() {
                 tr.innerHTML = `<td>${row.date}</td><td>${formatCurrency(row.total_sales)}</td><td style="color:var(--success);font-weight:bold;">${formatCurrency(row.total_profit)}</td>`;
                 tbody.appendChild(tr);
             });
-        } else {
+        } else if (currentReportMode === 'products') {
             thead.innerHTML = `<tr><th>Product Name</th><th>Quantity Sold</th><th>Revenue</th><th>Profit</th></tr>`;
             const res = await fetchAuth(`${API_BASE}/reports/product-sales`);
             const data = await res.json();
             data.forEach(row => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td>${row.product_name}</td><td>${row.quantity_sold}</td><td>${formatCurrency(row.revenue)}</td><td style="color:var(--success);font-weight:bold;">${formatCurrency(row.profit)}</td>`;
+                tbody.appendChild(tr);
+            });
+        } else if (currentReportMode === 'customers') {
+            thead.innerHTML = `<tr><th>Customer Name</th><th>No. of Bills</th><th>Total Revenue</th><th>Total Profit</th></tr>`;
+            const res = await fetchAuth(`${API_BASE}/reports/customer-sales`);
+            const data = await res.json();
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${row.customer_name}</td><td>${row.bills_count}</td><td>${formatCurrency(row.revenue)}</td><td style="color:var(--success);font-weight:bold;">${formatCurrency(row.profit)}</td>`;
                 tbody.appendChild(tr);
             });
         }
