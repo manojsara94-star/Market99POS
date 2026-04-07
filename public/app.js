@@ -492,17 +492,22 @@ function setupModals() {
         const inv = lastInvoiceShown;
         const element = document.getElementById('print-area');
         
-        // Temporarily ensure font rendering for canvas
+        // Save original styles
+        const originalWidth = element.style.width;
+        const originalBg = element.style.background;
+        const originalPadding = element.style.padding;
+
+        // Force 80mm width for perfect PDF conversion
+        element.style.width = "80mm";
         element.style.background = "white";
-        element.style.padding = "20px";
+        element.style.padding = "10px";
 
         const options = {
-            margin: 5,
+            margin: 0,
             filename: `Invoice_${inv.invoice_number}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 3, useCORS: true, letterRendering: true },
-            jsPDF: { unit: 'mm', format: [80, 250], orientation: 'portrait' } 
-            // Note: 80mm width as requested. 250mm is a safe long height.
+            image: { type: 'jpeg', quality: 1 },
+            html2canvas: { scale: 4, useCORS: true, logging: false, letterRendering: true },
+            jsPDF: { unit: 'mm', format: [80, 297], orientation: 'portrait' }
         };
 
         try {
@@ -524,8 +529,9 @@ function setupModals() {
             console.error('PDF sharing error:', err);
             alert('Failed to generate PDF. Make sure your browser supports this feature.');
         } finally {
-            element.style.background = ""; // Reset
-            element.style.padding = "";
+            element.style.width = originalWidth;
+            element.style.background = originalBg;
+            element.style.padding = originalPadding;
         }
     });
 
