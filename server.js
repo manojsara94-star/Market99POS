@@ -174,9 +174,9 @@ app.get('/api/dashboard', async (req, res) => {
         const dailyExpenseTotal = dailyExpenses.reduce((sum, e) => sum + e.amount, 0);
         const monthlyExpenseTotal = monthlyExpenses.reduce((sum, e) => sum + e.amount, 0);
 
-        // Product Counts
-        const totalProducts = await Product.countDocuments(queryFilter);
-        const lowStockProducts = await Product.countDocuments({ ...queryFilter, $expr: { $lte: ["$quantity", { $ifNull: ["$low_stock_limit", 10] }] } });
+        // Total Asset Value Calculation
+        const productsForAssets = await Product.find(queryFilter);
+        const totalAssetValue = productsForAssets.reduce((sum, p) => sum + (p.quantity * (p.cost || 0)), 0);
 
         res.json({
             totalBillsToday,
@@ -188,7 +188,8 @@ app.get('/api/dashboard', async (req, res) => {
             dailyProfit: dailyProfitRaw - dailyExpenseTotal,
             monthlyProfit: monthlyProfitRaw - monthlyExpenseTotal,
             totalProducts,
-            lowStockProducts
+            lowStockProducts,
+            totalAssetValue
         });
     } catch (err) {
         return res.status(500).json({ error: err.message });

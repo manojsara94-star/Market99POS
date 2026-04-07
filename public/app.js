@@ -754,6 +754,7 @@ async function loadDashboard() {
         document.getElementById('dash-profit-today').textContent = formatCurrency(stats.dailyProfit);
         document.getElementById('dash-profit-month').textContent = formatCurrency(stats.monthlyProfit);
         document.getElementById('dash-total-products').textContent = stats.totalProducts;
+        document.getElementById('dash-asset-value').textContent = formatCurrency(stats.totalAssetValue);
         document.getElementById('dash-low-stock').textContent = stats.lowStockProducts;
 
         // Show/Hide Low Stock Alert Banner
