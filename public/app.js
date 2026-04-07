@@ -1244,11 +1244,9 @@ async function loadInvoices() {
 
         invoicesList.forEach(inv => {
             const tr = document.createElement('tr');
-            let adminActions = '';
             let invDisplay = inv.invoice_number;
             if (currentRole === 'admin') {
                 invDisplay += `<div style="font-size:11px;color:var(--primary);margin-top:2px;">[${inv.owner_name}]</div>`;
-                adminActions = `<button class="btn btn-danger btn-icon-only delete-invoice-btn" style="margin-left: 4px;" data-id="${inv.id}"><i class='bx bx-trash'></i></button>`;
             }
 
             tr.innerHTML = `
@@ -1257,9 +1255,9 @@ async function loadInvoices() {
                 <td>${inv.time}</td>
                 <td style="font-weight:bold">${formatCurrency(inv.total_amount)}</td>
                 <td>
-                    <button class="btn btn-outline btn-icon-only view-invoice-btn" data-id="${inv.id}"><i class='bx bx-show'></i></button>
-                    <button class="btn btn-primary btn-icon-only print-invoice-btn" data-id="${inv.id}"><i class='bx bx-printer'></i></button>
-                    ${adminActions}
+                    <button class="btn btn-outline btn-icon-only view-invoice-btn" data-id="${inv.id}" title="View Details"><i class='bx bx-show'></i></button>
+                    <button class="btn btn-primary btn-icon-only print-invoice-btn" data-id="${inv.id}" title="Print Receipt"><i class='bx bx-printer'></i></button>
+                    <button class="btn btn-danger btn-icon-only delete-invoice-btn" data-id="${inv.id}" title="Delete Invoice"><i class='bx bx-trash'></i></button>
                 </td>
             `;
             tbody.appendChild(tr);
