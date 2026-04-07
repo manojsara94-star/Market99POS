@@ -458,7 +458,7 @@ function setupModals() {
         window.print();
     });
 
-    // WhatsApp Share logic
+    // WhatsApp Share logic (updated to include subtotal)
     document.getElementById('btn-share-whatsapp').addEventListener('click', () => {
         if (!lastInvoiceShown) return;
         
@@ -474,10 +474,11 @@ function setupModals() {
         });
         
         message += `--------------------------\n`;
+        message += `*Sub Total: Rs.${(parseFloat(inv.total_amount) + (parseFloat(inv.total_discount) || 0)).toFixed(2)}*\n`;
         if (inv.total_discount > 0) {
-            message += `*Discount:* Rs.${parseFloat(inv.total_discount).toFixed(2)}\n`;
+            message += `*Discount: -Rs.${parseFloat(inv.total_discount).toFixed(2)}*\n`;
         }
-        message += `*TOTAL: Rs.${parseFloat(inv.total_amount).toFixed(2)}*\n\n`;
+        message += `*NET TOTAL: Rs.${parseFloat(inv.total_amount).toFixed(2)}*\n\n`;
         message += `Thank you for your business!`;
 
         const encodedMsg = encodeURIComponent(message);
@@ -995,8 +996,8 @@ function updateBillUI() {
 
     currentBill.forEach(item => {
         const itemDiscount = parseFloat(item.discount) || 0;
-        const amount = (item.price * item.quantity) - itemDiscount;
-        total += amount;
+        const subtotal = item.price * item.quantity;
+        total += subtotal - itemDiscount;
         totalDiscount += itemDiscount;
 
         const div = document.createElement('div');
@@ -1023,6 +1024,7 @@ function updateBillUI() {
         itemsContainer.appendChild(div);
     });
 
+    document.getElementById('pos-sub-total').textContent = formatCurrency(total + totalDiscount);
     document.getElementById('pos-total-amount').textContent = formatCurrency(total);
 
     const discountRow = document.getElementById('pos-discount-row');
@@ -1199,7 +1201,8 @@ function showInvoicePrintout(invoice, autoPrint = true) {
         discountRow.style.display = 'none';
     }
 
-    document.getElementById('receipt-total-amount').textContent = 'Rs. ' + parseFloat(total).toFixed(2);
+    document.getElementById('receipt-sub-total').textContent = 'Rs. ' + parseFloat(invoice.total_amount + (invoice.total_discount || 0)).toFixed(2);
+    document.getElementById('receipt-total-amount').textContent = 'Rs. ' + parseFloat(invoice.total_amount).toFixed(2);
 
     // Show the modal
     showModal(invoiceModal);
