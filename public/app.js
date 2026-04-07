@@ -1172,7 +1172,7 @@ function showInvoicePrintout(invoice, autoPrint = true) {
     tbody.innerHTML = '';
 
     let total = 0;
-    invoice.items.forEach(item => {
+    invoice.items.forEach((item, index) => {
         const itemDiscount = item.discount || 0;
         const amt = (item.price * item.quantity) - itemDiscount;
         total += amt;
@@ -1182,12 +1182,13 @@ function showInvoicePrintout(invoice, autoPrint = true) {
         }
         const tr = document.createElement('tr');
         tr.innerHTML = `
+            <td>${index + 1}</td>
             <td>
                 <div>${item.product_name || item.name}</div>
                 ${discountNote}
             </td>
             <td>${item.quantity}</td>
-            <td>${item.price}</td>
+            <td>${parseFloat(item.price).toFixed(2)}</td>
             <td>${parseFloat(amt).toFixed(2)}</td>
         `;
         tbody.appendChild(tr);

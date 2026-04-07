@@ -638,15 +638,16 @@ body {
     #print-area { position: absolute; left: 0; top: 0; width: 80mm; padding: 10px; font-family: monospace; font-size: 12px; }
     .receipt-header, .receipt-footer { text-align: center; }
     .receipt-table { width: 100%; border-collapse: collapse; margin-block: 10px; }
-    .receipt-table th, .receipt-table td { text-align: left; padding: 2px 0; }
-    .receipt-table th:last-child, .receipt-table td:last-child { text-align: right; }
+    .receipt-table th, .receipt-table td { text-align: left; padding: 2px 0; vertical-align: top; }
+    .receipt-table th:nth-child(n+3), .receipt-table td:nth-child(n+3) { text-align: right; }
     .receipt-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; margin-block: 10px; }
 }
 
 /* Receipt Display hidden when not printing */
 .receipt { font-family: monospace; }
 .receipt-header, .receipt-footer { text-align: center; margin-block: 10px; }
-.receipt-table { width: 100%; margin-block: 10px; }
+.receipt-table { width: 100%; margin-block: 10px; border-collapse: collapse; }
+.receipt-table th:nth-child(n+3), .receipt-table td:nth-child(n+3) { text-align: right; }
 .receipt-total { display: flex; justify-content: space-between; font-weight: bold; margin-block: 10px; font-size: 16px; }
 
 /* Authentication UI */
