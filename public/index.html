@@ -365,7 +365,10 @@
                                         class='bx bx-x'></i></button>
                             </div>
                         </div>
-                        <div style="display: flex; gap: 10px;">
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="inventory-category-filter" class="form-control" style="width: 160px; font-size: 13px;">
+                                <option value="All">All Categories</option>
+                            </select>
                             <button class="btn btn-outline" id="btn-export-inventory"><i class='bx bx-download'></i>
                                 Export CSV</button>
                             <button class="btn btn-primary" id="btn-add-product"><i class='bx bx-plus'></i> Add
@@ -494,8 +497,7 @@
                     </div>
                     <div class="tabs-container">
                         <div class="tabs-header">
-                            <button class="tab-btn active" data-report="sales">Sales Report</button>
-                            <button class="tab-btn" data-report="products">Product Sales</button>
+                            <button class="tab-btn active" data-report="products">Product Sales</button>
                             <button class="tab-btn" data-report="customers">Customer Sales</button>
                         </div>
                         <div class="tabs-body">

@@ -159,6 +159,7 @@ let notifiedLowStockProducts = new Set();
 let currentPOSCategory = 'All';
 let customersList = [];
 let lastInvoiceShown = null;
+let currentInventoryCategory = 'All';
 
 // ==== DOM ELEMENTS ====
 const clockEl = document.getElementById('clock');
@@ -800,15 +801,28 @@ async function loadCategories() {
         cachedCategories = await res.json();
 
         const sel = document.getElementById('product-category');
+        const invSel = document.getElementById('inventory-category-filter');
         const oldVal = sel.value;
+        const oldInvVal = invSel ? invSel.value : 'All';
+        
         sel.innerHTML = '<option value="">Select Category</option>';
+        if (invSel) invSel.innerHTML = '<option value="All">All Categories</option>';
+        
         cachedCategories.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c.name;
             opt.textContent = c.name;
             sel.appendChild(opt);
+            
+            if (invSel) {
+                const optInv = document.createElement('option');
+                optInv.value = c.name;
+                optInv.textContent = c.name;
+                invSel.appendChild(optInv);
+            }
         });
         if (oldVal) sel.value = oldVal;
+        if (invSel) invSel.value = oldInvVal;
     } catch (err) { console.error(err); }
 }
 
@@ -824,9 +838,15 @@ async function loadInventory() {
 
         // Handle admin inventory filtering
         let productsToRender = products;
+        
+        // Handle Category Filtering
+        if (currentInventoryCategory !== 'All') {
+            productsToRender = productsToRender.filter(p => (p.category || 'General') === currentInventoryCategory);
+        }
+
         const filterBadge = document.getElementById('inventory-filter-badge');
         if (currentRole === 'admin' && adminInventoryFilter) {
-            productsToRender = products.filter(p => p.owner_name === adminInventoryFilter);
+            productsToRender = productsToRender.filter(p => p.owner_name === adminInventoryFilter);
             document.getElementById('inventory-filter-name').textContent = adminInventoryFilter;
             filterBadge.style.display = 'flex';
         } else {
@@ -861,8 +881,15 @@ async function loadInventory() {
     }
 }
 
+document.getElementById('inventory-category-filter').addEventListener('change', (e) => {
+    currentInventoryCategory = e.target.value;
+    loadInventory();
+});
+
 document.getElementById('btn-clear-inventory-filter').addEventListener('click', () => {
     adminInventoryFilter = null;
+    currentInventoryCategory = 'All';
+    document.getElementById('inventory-category-filter').value = 'All';
     loadInventory();
 });
 
@@ -1364,7 +1391,7 @@ document.getElementById('btn-export-invoices').addEventListener('click', () => {
 });
 
 // ==== REPORTS ====
-let currentReportMode = 'sales';
+let currentReportMode = 'products';
 
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
