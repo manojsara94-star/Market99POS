@@ -1073,14 +1073,23 @@ function showInvoicePrintout(invoice, autoPrint = true) {
     // Logo in printout
     const receiptLogo = document.getElementById('receipt-logo');
     const logoSource = invoice.owner_logo || currentLogo;
+    
     if (logoSource) {
         receiptLogo.src = logoSource;
-        receiptLogo.style.display = 'block';
+        receiptLogo.style.display = 'inline-block';
     } else {
+        receiptLogo.src = "";
         receiptLogo.style.display = 'none';
     }
 
     document.getElementById('receipt-business-name').textContent = invoice.owner_name || currentBusiness;
+    const businessInfoEl = document.getElementById('receipt-business-info');
+    if (invoice.owner_info) {
+        businessInfoEl.textContent = invoice.owner_info;
+    } else {
+        businessInfoEl.textContent = "";
+    }
+
     document.getElementById('receipt-no').textContent = invoice.invoice_number;
     document.getElementById('receipt-date').textContent = invoice.date;
     document.getElementById('receipt-time').textContent = invoice.time;
@@ -1140,13 +1149,24 @@ function showInvoicePrintout(invoice, autoPrint = true) {
 
     document.getElementById('receipt-total-amount').textContent = 'Rs. ' + parseFloat(total).toFixed(2);
 
-    // Automatically open modal and print dialog as per rules
+    // Show the modal
     showModal(invoiceModal);
 
+    // If autoPrint, wait for logo loading then print
     if (autoPrint) {
-        setTimeout(() => {
-            window.print();
-        }, 500);
+        const printIt = () => {
+             // Second small delay to ensure rendering complete
+             setTimeout(() => {
+                 window.print();
+             }, 500);
+        };
+
+        if (!logoSource || receiptLogo.complete) {
+            printIt();
+        } else {
+            receiptLogo.onload = printIt;
+            receiptLogo.onerror = printIt; // print even if logo fails
+        }
     }
 }
 

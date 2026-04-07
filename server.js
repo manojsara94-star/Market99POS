@@ -442,7 +442,7 @@ app.get('/api/invoices', async (req, res) => {
 
     try {
         const invoices = await Invoice.find(query)
-            .populate('user_id', 'business_name logo')
+            .populate('user_id', 'business_name logo whatsapp_number')
             .sort({ date: -1, time: -1 });
         
         // Map _id to id for frontend
@@ -453,7 +453,8 @@ app.get('/api/invoices', async (req, res) => {
             time: inv.time,
             total_amount: inv.total_amount,
             owner_name: inv.user_id ? inv.user_id.business_name : 'Unknown',
-            owner_logo: inv.user_id ? inv.user_id.logo : null
+            owner_logo: inv.user_id ? inv.user_id.logo : null,
+            owner_info: inv.user_id ? inv.user_id.whatsapp_number : ''
         }));
         
         res.json(mappedInvoices);
@@ -465,7 +466,7 @@ app.get('/api/invoices', async (req, res) => {
 app.get('/api/invoices/:id', async (req, res) => {
     try {
         const queryFilter = req.user.role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, user_id: req.user._id };
-        const invoice = await Invoice.findOne(queryFilter).populate('user_id', 'business_name logo');
+        const invoice = await Invoice.findOne(queryFilter).populate('user_id', 'business_name logo whatsapp_number');
         if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
         
         const response = {
@@ -476,6 +477,7 @@ app.get('/api/invoices/:id', async (req, res) => {
             total_amount: invoice.total_amount,
             owner_name: invoice.user_id ? invoice.user_id.business_name : '',
             owner_logo: invoice.user_id ? invoice.user_id.logo : null,
+            owner_info: invoice.user_id ? invoice.user_id.whatsapp_number : '',
             items: invoice.items.map(item => ({
                 id: item._id ? item._id.toString() : null,
                 product_name: item.product_name,
@@ -570,7 +572,15 @@ app.post('/api/invoices', async (req, res) => {
             }
         }
 
-        res.status(201).json({ invoice });
+        res.status(201).json({ 
+            invoice: {
+                ...invoice.toObject(),
+                id: invoice._id.toString(),
+                owner_name: req.user.business_name,
+                owner_logo: req.user.logo,
+                owner_info: req.user.whatsapp_number
+            }
+        });
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
