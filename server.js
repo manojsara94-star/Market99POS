@@ -174,9 +174,11 @@ app.get('/api/dashboard', async (req, res) => {
         const dailyExpenseTotal = dailyExpenses.reduce((sum, e) => sum + e.amount, 0);
         const monthlyExpenseTotal = monthlyExpenses.reduce((sum, e) => sum + e.amount, 0);
 
-        // Total Asset Value Calculation
+        // Total Asset Value and Counts Calculation
         const productsForAssets = await Product.find(queryFilter);
         const totalAssetValue = productsForAssets.reduce((sum, p) => sum + (p.quantity * (p.cost || 0)), 0);
+        const totalProducts = productsForAssets.length;
+        const lowStockProducts = productsForAssets.filter(p => p.quantity <= (p.low_stock_limit !== undefined ? p.low_stock_limit : 10)).length;
 
         res.json({
             totalBillsToday,
