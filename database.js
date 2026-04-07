@@ -34,7 +34,8 @@ const UserSchema = new mongoose.Schema({
     business_address: { type: String },
     marketplace_enabled: { type: Boolean, default: false },
     role: { type: String, default: 'user' },
-    logo: { type: String }
+    logo: { type: String },
+    invoice_counter: { type: Number, default: 0 }
 });
 
 const ProductSchema = new mongoose.Schema({

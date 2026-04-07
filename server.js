@@ -506,7 +506,11 @@ app.post('/api/invoices', async (req, res) => {
     const today = new Date();
     const date = clientDate || today.toISOString().split('T')[0];
     const time = clientTime || today.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
-    const invoice_number = 'INV-' + today.getTime().toString().slice(-6);
+    
+    // Increment User's invoice counter and get the new value
+    const updatedUser = await User.findByIdAndUpdate(req.user._id, { $inc: { invoice_counter: 1 } }, { new: true });
+    const counter = updatedUser.invoice_counter || 1;
+    const invoice_number = 'INV-' + counter.toString().padStart(4, '0');
 
     const formattedItems = items.map(item => {
         const itemCost = item.cost || 0;

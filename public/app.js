@@ -158,6 +158,7 @@ let currentProductImageBase64 = null;
 let notifiedLowStockProducts = new Set();
 let currentPOSCategory = 'All';
 let customersList = [];
+let lastInvoiceShown = null;
 
 // ==== DOM ELEMENTS ====
 const clockEl = document.getElementById('clock');
@@ -455,6 +456,33 @@ function setupModals() {
     // Print Receipt logic
     document.getElementById('btn-print-receipt').addEventListener('click', () => {
         window.print();
+    });
+
+    // WhatsApp Share logic
+    document.getElementById('btn-share-whatsapp').addEventListener('click', () => {
+        if (!lastInvoiceShown) return;
+        
+        const inv = lastInvoiceShown;
+        let message = `*Invoice: ${inv.invoice_number}*\n`;
+        message += `*Date:* ${inv.date} ${inv.time}\n`;
+        message += `*Business:* ${inv.owner_name || currentBusiness}\n`;
+        message += `--------------------------\n`;
+        
+        inv.items.forEach(item => {
+            const amt = (item.price * item.quantity) - (item.discount || 0);
+            message += `${item.product_name || item.name} x ${item.quantity} = Rs.${amt.toFixed(2)}\n`;
+        });
+        
+        message += `--------------------------\n`;
+        if (inv.total_discount > 0) {
+            message += `*Discount:* Rs.${parseFloat(inv.total_discount).toFixed(2)}\n`;
+        }
+        message += `*TOTAL: Rs.${parseFloat(inv.total_amount).toFixed(2)}*\n\n`;
+        message += `Thank you for your business!`;
+
+        const encodedMsg = encodeURIComponent(message);
+        const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedMsg}`;
+        window.open(whatsappUrl, '_blank');
     });
 
     // Admin User Edit Form
@@ -1089,6 +1117,7 @@ document.getElementById('btn-submit-bill').addEventListener('click', () => submi
 document.getElementById('btn-submit-print').addEventListener('click', () => submitCurrentBill(true));
 
 function showInvoicePrintout(invoice, autoPrint = true) {
+    lastInvoiceShown = invoice;
     // Logo in printout
     const receiptLogo = document.getElementById('receipt-logo');
     const logoSource = invoice.owner_logo || currentLogo;
