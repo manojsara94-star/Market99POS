@@ -10,6 +10,8 @@
     <!-- Boxicons for modern icons -->
     <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <link rel="stylesheet" href="/style.css">
+    <!-- html2pdf for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 
 <body>
@@ -757,12 +759,16 @@
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer" style="display: flex; gap: 10px;">
+                <div class="modal-footer" style="display: flex; gap: 8px; flex-wrap: wrap;">
                     <button class="btn btn-outline" id="btn-share-whatsapp"
-                        style="flex: 1; background: #25D366; color: white; border: none;">
-                        <i class='bx bxl-whatsapp'></i> Share WhatsApp
+                        style="flex: 1; background: #25D366; color: white; border: none; min-width: 120px;">
+                        <i class='bx bxl-whatsapp'></i> Share Text
                     </button>
-                    <button class="btn btn-primary" id="btn-print-receipt" style="flex: 1;">
+                    <button class="btn btn-outline" id="btn-share-pdf"
+                        style="flex: 1; background: #e11d48; color: white; border: none; min-width: 120px;">
+                        <i class='bx bxs-file-pdf'></i> Share PDF
+                    </button>
+                    <button class="btn btn-primary" id="btn-print-receipt" style="flex: 1; min-width: 120px;">
                         <i class='bx bx-printer'></i> Print Receipt
                     </button>
                 </div>

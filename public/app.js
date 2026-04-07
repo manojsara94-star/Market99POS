@@ -486,6 +486,49 @@ function setupModals() {
         window.open(whatsappUrl, '_blank');
     });
 
+    // Share PDF Logic
+    document.getElementById('btn-share-pdf').addEventListener('click', async () => {
+        if (!lastInvoiceShown) return;
+        const inv = lastInvoiceShown;
+        const element = document.getElementById('print-area');
+        
+        // Temporarily ensure font rendering for canvas
+        element.style.background = "white";
+        element.style.padding = "20px";
+
+        const options = {
+            margin: 5,
+            filename: `Invoice_${inv.invoice_number}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 3, useCORS: true, letterRendering: true },
+            jsPDF: { unit: 'mm', format: [80, 250], orientation: 'portrait' } 
+            // Note: 80mm width as requested. 250mm is a safe long height.
+        };
+
+        try {
+            const pdfBlob = await html2pdf().set(options).from(element).output('blob');
+            const file = new File([pdfBlob], `Invoice_${inv.invoice_number}.pdf`, { type: 'application/pdf' });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: `Invoice ${inv.invoice_number}`,
+                    text: `Here is the PDF bill for Invoice ${inv.invoice_number}`
+                });
+            } else {
+                // Fallback: Download
+                html2pdf().set(options).from(element).save();
+                alert('PDF generated! Please share the downloaded file manually via WhatsApp.');
+            }
+        } catch (err) {
+            console.error('PDF sharing error:', err);
+            alert('Failed to generate PDF. Make sure your browser supports this feature.');
+        } finally {
+            element.style.background = ""; // Reset
+            element.style.padding = "";
+        }
+    });
+
     // Admin User Edit Form
     document.getElementById('admin-user-form').addEventListener('submit', async (e) => {
         e.preventDefault();
