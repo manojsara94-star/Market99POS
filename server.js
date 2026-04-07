@@ -36,7 +36,8 @@ app.post('/api/auth/register', async (req, res) => {
         res.status(201).json({ 
             token: user._id.toString(), 
             business_name: user.business_name, 
-            role: user.role 
+            role: user.role,
+            logo: user.logo
         });
     } catch (err) {
         return res.status(500).json({ error: err.message });
@@ -54,7 +55,7 @@ app.post('/api/auth/login', async (req, res) => {
         if (!user) {
             return res.status(401).json({ error: 'Invalid credentials' });
         }
-        res.json({ token: user._id.toString(), business_name: user.business_name, role: user.role });
+        res.json({ token: user._id.toString(), business_name: user.business_name, role: user.role, logo: user.logo });
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
@@ -441,7 +442,7 @@ app.get('/api/invoices', async (req, res) => {
 
     try {
         const invoices = await Invoice.find(query)
-            .populate('user_id', 'business_name')
+            .populate('user_id', 'business_name logo')
             .sort({ date: -1, time: -1 });
         
         // Map _id to id for frontend
@@ -451,7 +452,8 @@ app.get('/api/invoices', async (req, res) => {
             date: inv.date,
             time: inv.time,
             total_amount: inv.total_amount,
-            owner_name: inv.user_id ? inv.user_id.business_name : 'Unknown'
+            owner_name: inv.user_id ? inv.user_id.business_name : 'Unknown',
+            owner_logo: inv.user_id ? inv.user_id.logo : null
         }));
         
         res.json(mappedInvoices);
@@ -463,7 +465,7 @@ app.get('/api/invoices', async (req, res) => {
 app.get('/api/invoices/:id', async (req, res) => {
     try {
         const queryFilter = req.user.role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, user_id: req.user._id };
-        const invoice = await Invoice.findOne(queryFilter).populate('user_id', 'business_name');
+        const invoice = await Invoice.findOne(queryFilter).populate('user_id', 'business_name logo');
         if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
         
         const response = {
@@ -472,6 +474,8 @@ app.get('/api/invoices/:id', async (req, res) => {
             date: invoice.date,
             time: invoice.time,
             total_amount: invoice.total_amount,
+            owner_name: invoice.user_id ? invoice.user_id.business_name : '',
+            owner_logo: invoice.user_id ? invoice.user_id.logo : null,
             items: invoice.items.map(item => ({
                 id: item._id ? item._id.toString() : null,
                 product_name: item.product_name,
@@ -644,12 +648,23 @@ app.post('/api/marketplace/enable', async (req, res) => {
 
 // ==== USER SETTINGS API ====
 
+app.get('/api/user/settings', async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).select('-password');
+        if (!user) return res.status(404).json({ error: 'User not found' });
+        res.json(user);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
 app.put('/api/user/settings', async (req, res) => {
-    const { business_name, password } = req.body;
+    const { business_name, password, logo } = req.body;
     try {
         const updateData = {};
         if (business_name) updateData.business_name = business_name;
         if (password) updateData.password = password;
+        if (logo !== undefined) updateData.logo = logo;
 
         if (Object.keys(updateData).length === 0) {
             return res.status(400).json({ error: 'No data to update' });
@@ -660,7 +675,8 @@ app.put('/api/user/settings', async (req, res) => {
 
         res.json({ 
             message: 'Settings updated successfully', 
-            business_name: user.business_name 
+            business_name: user.business_name,
+            logo: user.logo
         });
     } catch (err) {
         return res.status(500).json({ error: err.message });

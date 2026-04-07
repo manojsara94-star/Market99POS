@@ -32,7 +32,8 @@ const UserSchema = new mongoose.Schema({
     business_name: { type: String, required: true },
     whatsapp_number: { type: String },
     marketplace_enabled: { type: Boolean, default: false },
-    role: { type: String, default: 'user' }
+    role: { type: String, default: 'user' },
+    logo: { type: String }
 });
 
 const ProductSchema = new mongoose.Schema({

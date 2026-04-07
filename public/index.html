@@ -511,6 +511,14 @@
                                 <h2>Business Information</h2>
                             </div>
                             <form id="settings-business-form">
+                                <div class="form-group" style="text-align:center;">
+                                    <input type="file" id="settings-logo-input" accept="image/*" style="display:none;">
+                                    <div id="settings-logo-preview" onclick="document.getElementById('settings-logo-input').click()"
+                                        style="width:100px; height:100px; border:2px dashed var(--border); border-radius:12px; margin:0 auto 15px; display:flex; align-items:center; justify-content:center; cursor:pointer; overflow:hidden; background:var(--secondary);">
+                                        <span style="color:var(--text-muted);font-size:12px;">+ Add Logo</span>
+                                    </div>
+                                    <button type="button" class="btn btn-outline btn-sm" id="btn-remove-logo" style="margin-bottom:15px; display:none;">Remove Logo</button>
+                                </div>
                                 <div class="form-group">
                                     <label>Business Name</label>
                                     <input type="text" id="settings-business-name" class="form-control" required placeholder="Enter new business name">
@@ -638,8 +646,9 @@
                 <div class="modal-body print-area" id="print-area">
                     <div class="receipt">
                         <div class="receipt-header">
-                            <h2>Manoj Saranga</h2>
-                            <p>Medagama - 0767654555</p>
+                            <img id="receipt-logo" src="" style="max-width: 60px; max-height: 60px; margin-bottom: 5px; display: none;">
+                            <h2 id="receipt-business-name">Manoj Saranga</h2>
+                            <p id="receipt-business-info">Medagama - 0767654555</p>
                             <p>----------------------------</p>
                         </div>
                         <div class="receipt-meta">

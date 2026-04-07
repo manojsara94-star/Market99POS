@@ -3,6 +3,8 @@ const API_BASE = '/api';
 let authToken = localStorage.getItem('pos_token') || null;
 let currentBusiness = localStorage.getItem('pos_business') || '';
 let currentRole = localStorage.getItem('pos_role') || 'user';
+let currentLogo = localStorage.getItem('pos_logo') || null;
+let currentLogoBase64 = null;
 
 // ==== AUTH LOGIC ====
 const authOverlay = document.getElementById('auth-overlay');
@@ -35,7 +37,7 @@ loginForm.addEventListener('submit', async (e) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Login failed');
 
-        loginSuccess(data.token, data.business_name, data.role);
+        loginSuccess(data.token, data.business_name, data.role, data.logo);
     } catch (err) { alert(err.message); }
 });
 
@@ -55,17 +57,20 @@ registerForm.addEventListener('submit', async (e) => {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Registration failed');
 
-        loginSuccess(data.token, data.business_name, data.role);
+        loginSuccess(data.token, data.business_name, data.role, data.logo);
     } catch (err) { alert(err.message); }
 });
 
-function loginSuccess(token, businessName, role = 'user') {
+function loginSuccess(token, businessName, role = 'user', logo = null) {
     authToken = token;
     currentBusiness = businessName;
     currentRole = role;
+    currentLogo = logo;
     localStorage.setItem('pos_token', token);
     localStorage.setItem('pos_business', businessName);
     localStorage.setItem('pos_role', role);
+    if (logo) localStorage.setItem('pos_logo', logo);
+    else localStorage.removeItem('pos_logo');
     checkAuth();
 }
 
@@ -73,9 +78,11 @@ document.getElementById('btn-logout').addEventListener('click', () => {
     authToken = null;
     currentBusiness = '';
     currentRole = 'user';
+    currentLogo = null;
     localStorage.removeItem('pos_token');
     localStorage.removeItem('pos_business');
     localStorage.removeItem('pos_role');
+    localStorage.removeItem('pos_logo');
     checkAuth();
 });
 
@@ -1063,6 +1070,17 @@ document.getElementById('btn-submit-bill').addEventListener('click', () => submi
 document.getElementById('btn-submit-print').addEventListener('click', () => submitCurrentBill(true));
 
 function showInvoicePrintout(invoice, autoPrint = true) {
+    // Logo in printout
+    const receiptLogo = document.getElementById('receipt-logo');
+    const logoSource = invoice.owner_logo || currentLogo;
+    if (logoSource) {
+        receiptLogo.src = logoSource;
+        receiptLogo.style.display = 'block';
+    } else {
+        receiptLogo.style.display = 'none';
+    }
+
+    document.getElementById('receipt-business-name').textContent = invoice.owner_name || currentBusiness;
     document.getElementById('receipt-no').textContent = invoice.invoice_number;
     document.getElementById('receipt-date').textContent = invoice.date;
     document.getElementById('receipt-time').textContent = invoice.time;
@@ -1344,8 +1362,81 @@ document.querySelector('#admin-users-table tbody').addEventListener('click', asy
 
 // ==== SETTINGS ====
 async function loadSettings() {
-    document.getElementById('settings-business-name').value = currentBusiness;
+    try {
+        const res = await fetchAuth(`${API_BASE}/user/settings`);
+        const user = await res.json();
+
+        currentBusiness = user.business_name;
+        currentLogo = user.logo;
+        localStorage.setItem('pos_business', currentBusiness);
+        if (currentLogo) localStorage.setItem('pos_logo', currentLogo);
+        else localStorage.removeItem('pos_logo');
+
+        document.getElementById('settings-business-name').value = currentBusiness;
+        document.getElementById('business-name-display').textContent = currentBusiness;
+
+        const preview = document.getElementById('settings-logo-preview');
+        const removeBtn = document.getElementById('btn-remove-logo');
+        if (currentLogo) {
+            preview.innerHTML = `<img src="${currentLogo}" style="width:100%;height:100%;object-fit:contain;">`;
+            removeBtn.style.display = 'inline-block';
+        } else {
+            preview.innerHTML = `<span style="color:var(--text-muted);font-size:12px;">+ Add Logo</span>`;
+            removeBtn.style.display = 'none';
+        }
+        currentLogoBase64 = currentLogo;
+    } catch (err) {
+        console.error('Error loading settings:', err);
+    }
 }
+
+document.getElementById('settings-logo-input').addEventListener('change', function (e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (event) {
+        const img = new Image();
+        img.onload = function () {
+            const canvas = document.createElement('canvas');
+            const MAX_WIDTH = 300;
+            const MAX_HEIGHT = 300;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+            } else {
+                if (height > MAX_HEIGHT) {
+                    width *= MAX_HEIGHT / height;
+                    height = MAX_HEIGHT;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const dataUrl = canvas.toDataURL('image/png', 0.8);
+            currentLogoBase64 = dataUrl;
+            document.getElementById('settings-logo-preview').innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:contain;">`;
+            document.getElementById('btn-remove-logo').style.display = 'inline-block';
+        }
+        img.src = event.target.result;
+    }
+    reader.readAsDataURL(file);
+});
+
+document.getElementById('btn-remove-logo').addEventListener('click', () => {
+    currentLogoBase64 = null;
+    document.getElementById('settings-logo-preview').innerHTML = `<span style="color:var(--text-muted);font-size:12px;">+ Add Logo</span>`;
+    document.getElementById('btn-remove-logo').style.display = 'none';
+    document.getElementById('settings-logo-input').value = '';
+});
 
 document.getElementById('settings-business-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -1356,17 +1447,21 @@ document.getElementById('settings-business-form').addEventListener('submit', asy
         const res = await fetchAuth(`${API_BASE}/user/settings`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ business_name })
+            body: JSON.stringify({ business_name, logo: currentLogoBase64 })
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to update business name');
+        if (!res.ok) throw new Error(data.error || 'Failed to update settings');
 
         // Update local state
         currentBusiness = data.business_name;
+        currentLogo = data.logo;
         localStorage.setItem('pos_business', currentBusiness);
+        if (currentLogo) localStorage.setItem('pos_logo', currentLogo);
+        else localStorage.removeItem('pos_logo');
+
         document.getElementById('business-name-display').textContent = currentBusiness;
-        
-        alert('Business name updated successfully!');
+
+        alert('Settings updated successfully!');
     } catch (err) {
         console.error(err);
         alert(err.message);
