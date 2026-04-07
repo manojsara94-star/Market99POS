@@ -588,10 +588,12 @@ body {
     display: none;
     transform: translateY(20px);
     transition: transform 0.3s ease;
+    max-height: 90vh;
+    flex-direction: column;
 }
 
 .modal.active {
-    display: block;
+    display: flex;
     transform: translateY(0);
 }
 
@@ -605,7 +607,11 @@ body {
 
 .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-muted); }
 
-.modal-body { padding: 24px; }
+.modal-body { 
+    padding: 24px; 
+    overflow-y: auto;
+    flex: 1;
+}
 .modal-footer { padding: 20px 24px; border-top: 1px solid var(--border); }
 
 .form-group { margin-bottom: 20px; }
