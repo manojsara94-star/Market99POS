@@ -189,7 +189,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function updateClock() {
     const now = new Date();
-    clockEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' - ' + now.toLocaleDateString();
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+    const dateStr = now.toLocaleDateString([], { day: 'numeric', month: 'short', year: 'numeric' });
+    clockEl.innerHTML = `<i class='bx bx-time-five'></i> <span>${timeStr}</span> <span style="opacity:0.7; font-weight:400; margin-left:10px; padding-left:10px; border-left:1px solid rgba(255,255,255,0.3);">${dateStr}</span>`;
 }
 
 function setupNavigation() {
