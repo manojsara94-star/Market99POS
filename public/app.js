@@ -633,7 +633,8 @@ async function deleteExpense(id) {
 
 // ==== POS ====
 function formatCurrency(amount) {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'LKR' }).format(amount).replace('LKR', 'Rs.');
+    const val = parseFloat(amount) || 0;
+    return 'Rs. ' + val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function checkLowStockAlerts(productList) {
@@ -1178,7 +1179,7 @@ function showInvoicePrintout(invoice, autoPrint = true) {
         total += amt;
         let discountNote = '';
         if (itemDiscount > 0) {
-            discountNote = `<div style="font-size: 10px; color: #555;">Disc: -Rs.${parseFloat(itemDiscount).toFixed(2)}</div>`;
+            discountNote = `<div style="font-size: 10px; color: #555;">Disc: -${formatCurrency(itemDiscount)}</div>`;
         }
         const tr = document.createElement('tr');
         tr.innerHTML = `
@@ -1188,8 +1189,8 @@ function showInvoicePrintout(invoice, autoPrint = true) {
                 ${discountNote}
             </td>
             <td>${item.quantity}</td>
-            <td>${parseFloat(item.price).toFixed(2)}</td>
-            <td>${parseFloat(amt).toFixed(2)}</td>
+            <td>${formatCurrency(item.price).replace('Rs. ', '')}</td>
+            <td>${formatCurrency(amt).replace('Rs. ', '')}</td>
         `;
         tbody.appendChild(tr);
     });
@@ -1197,13 +1198,13 @@ function showInvoicePrintout(invoice, autoPrint = true) {
     const discountRow = document.getElementById('receipt-discount-row');
     if (invoice.total_discount > 0) {
         discountRow.style.display = 'flex';
-        document.getElementById('receipt-total-discount').textContent = 'Rs. ' + parseFloat(invoice.total_discount).toFixed(2);
+        document.getElementById('receipt-total-discount').textContent = formatCurrency(invoice.total_discount).replace('Rs. ', '');
     } else {
         discountRow.style.display = 'none';
     }
 
-    document.getElementById('receipt-sub-total').textContent = 'Rs. ' + parseFloat(invoice.total_amount + (invoice.total_discount || 0)).toFixed(2);
-    document.getElementById('receipt-total-amount').textContent = 'Rs. ' + parseFloat(invoice.total_amount).toFixed(2);
+    document.getElementById('receipt-sub-total').textContent = formatCurrency(parseFloat(invoice.total_amount) + (parseFloat(invoice.total_discount) || 0));
+    document.getElementById('receipt-total-amount').textContent = formatCurrency(invoice.total_amount);
 
     // Show the modal
     showModal(invoiceModal);
