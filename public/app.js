@@ -107,14 +107,14 @@ function checkAuth() {
             document.getElementById('nav-item-admin').style.display = 'none';
         }
 
-        // Update Header Branding & Avatar
-        const brandLogoContainer = document.getElementById('header-brand-logo');
+        // Update Sidebar Branding & Header Avatar
+        const sidebarLogoContainer = document.getElementById('sidebar-logo-container');
         const userAvatar = document.getElementById('header-user-avatar');
         
         if (currentLogo) {
-            brandLogoContainer.innerHTML = `<img src="${currentLogo}" alt="Brand">`;
+            sidebarLogoContainer.innerHTML = `<img src="${currentLogo}" alt="${currentBusiness}">`;
         } else {
-            brandLogoContainer.innerHTML = `<i class='bx bxs-store' style='color:var(--text-muted);'></i>`;
+            sidebarLogoContainer.innerHTML = `<i class='bx bx-store-alt icon'></i> <span class="logo-name">Retail POS</span>`;
         }
         
         userAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(currentBusiness)}&background=4f46e5&color=fff`;
