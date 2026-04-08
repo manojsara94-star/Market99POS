@@ -365,6 +365,11 @@
                                     <span>NET TOTAL</span>
                                     <span id="pos-total-amount">0.00</span>
                                 </div>
+                                <div class="form-group" style="margin-top:15px; border-top:1px solid var(--border); padding-top:15px;">
+                                    <label style="font-size:12px; color:var(--text-muted);">Amount Paid (Rs)</label>
+                                    <input type="number" id="pos-paid-amount" class="form-control" style="font-weight:700; font-size:18px; color:var(--primary);" placeholder="Enter amount paid">
+                                    <div id="pos-balance-display" style="font-size:12px; color:var(--danger); margin-top:5px; text-align:right; font-weight:500; display:none;">Balance (Credit): Rs. 0.00</div>
+                                </div>
                                 <div style="display: flex; gap: 10px; margin-top: 15px;">
                                     <button class="btn btn-block" id="btn-submit-bill"
                                         style="margin: 0; background-color: var(--success, #2ecc71); color: #ffffff; border: none;">Submit
@@ -565,10 +570,13 @@
                             <table class="data-table" id="invoices-table">
                                 <thead>
                                     <tr>
-                                        <th>Invoice Number</th>
-                                        <th>Date</th>
-                                        <th>Time</th>
-                                        <th>Total Amount</th>
+                                        <th>Inv #</th>
+                                        <th>Date/Time</th>
+                                        <th>Customer</th>
+                                        <th>Total</th>
+                                        <th>Paid</th>
+                                        <th>Balance</th>
+                                        <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -1080,6 +1088,29 @@
                             <input type="number" id="pay-pur-amount" class="form-control" required step="0.01" min="0.01">
                         </div>
                         <button type="submit" class="btn btn-primary btn-block" id="btn-submit-pur-payment">Record Payment</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Invoice Payment Modal -->
+            <div class="modal" id="invoice-payment-modal" style="max-width:400px;">
+                <div class="modal-header">
+                    <h3>Settle Customer Debt</h3>
+                    <button class="close-btn" id="btn-close-pay-inv-modal"><i class='bx bx-x'></i></button>
+                </div>
+                <div class="modal-body">
+                    <div style="text-align:center; margin-bottom:20px;">
+                        <div id="pay-inv-number" style="font-weight:700; color:var(--text-muted);">INV-00000</div>
+                        <div id="pay-inv-balance" style="font-size:24px; font-weight:700; color:var(--danger); margin-top:5px;">Rs. 0.00</div>
+                        <div style="font-size:12px; color:var(--text-muted);">Customer Balance</div>
+                    </div>
+                    <form id="invoice-payment-form">
+                        <input type="hidden" id="pay-inv-id">
+                        <div class="form-group">
+                            <label>Payment Amount (Rs)</label>
+                            <input type="number" id="pay-inv-amount" class="form-control" required step="0.01" min="0.01">
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Record Payment</button>
                     </form>
                 </div>
             </div>

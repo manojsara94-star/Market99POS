@@ -72,7 +72,10 @@ const InvoiceSchema = new mongoose.Schema({
     total_amount: { type: Number, default: 0.0 },
     total_discount: { type: Number, default: 0.0 },
     total_profit: { type: Number, default: 0.0 },
-    items: [InvoiceItemSchema]
+    items: [InvoiceItemSchema],
+    paid_amount: { type: Number, default: 0.0 },
+    balance_amount: { type: Number, default: 0.0 },
+    payment_status: { type: String, default: 'Paid' } // Paid, Partial, Credit
 });
 
 const CategorySchema = new mongoose.Schema({

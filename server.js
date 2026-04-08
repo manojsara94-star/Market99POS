@@ -570,7 +570,10 @@ app.post('/api/invoices', async (req, res) => {
             total_amount,
             total_discount: total_discount || 0,
             total_profit,
-            items: formattedItems
+            items: formattedItems,
+            paid_amount: req.body.paid_amount !== undefined ? req.body.paid_amount : total_amount,
+            balance_amount: req.body.balance_amount !== undefined ? req.body.balance_amount : 0,
+            payment_status: req.body.payment_status || (req.body.balance_amount > 0 ? 'Credit' : 'Paid')
         });
 
         // Update product stock manually
@@ -616,6 +619,32 @@ app.post('/api/invoices', async (req, res) => {
                 owner_phone: req.user.whatsapp_number
             }
         });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/invoices/:id/payment', async (req, res) => {
+    const { amount } = req.body;
+    if (!amount || isNaN(amount) || amount <= 0) return res.status(400).json({ error: 'Invalid payment amount' });
+
+    try {
+        const queryFilter = req.user.role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, user_id: req.user._id };
+        const invoice = await Invoice.findOne(queryFilter);
+        if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+
+        invoice.paid_amount += parseFloat(amount);
+        invoice.balance_amount = invoice.total_amount - invoice.paid_amount;
+        
+        if (invoice.balance_amount <= 0) {
+            invoice.payment_status = 'Paid';
+            invoice.balance_amount = 0;
+        } else {
+            invoice.payment_status = 'Partial';
+        }
+
+        await invoice.save();
+        res.json({ message: 'Payment recorded successfully', invoice });
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }

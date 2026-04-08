@@ -190,6 +190,7 @@ const expenseModal = document.getElementById('expense-modal');
 const supplierModal = document.getElementById('supplier-modal');
 const purchaseModal = document.getElementById('purchase-modal');
 const purchasePaymentModal = document.getElementById('purchase-payment-modal');
+const invoicePaymentModal = document.getElementById('invoice-payment-modal');
 
 // ==== INITIALIZATION ====
 document.addEventListener('DOMContentLoaded', () => {
