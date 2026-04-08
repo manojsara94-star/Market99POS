@@ -784,25 +784,36 @@ document.getElementById('btn-new-purchase').addEventListener('click', async () =
     document.getElementById('purchase-paid-amount').value = 0;
     document.getElementById('purchase-date').value = new Date().toISOString().split('T')[0];
     
-    // Load suppliers into dropdown
-    await loadSuppliers();
-    const suppSelect = document.getElementById('purchase-supplier');
-    suppSelect.innerHTML = '<option value="">Select Supplier</option>';
-    suppliersList.forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s.id;
-        opt.textContent = s.name;
-        suppSelect.appendChild(opt);
-    });
+    try {
+        // Fetch latest products and suppliers
+        const [prodRes, suppRes] = await Promise.all([
+            fetchAuth(`${API_BASE}/products`),
+            fetchAuth(`${API_BASE}/suppliers`)
+        ]);
+        products = await prodRes.json();
+        suppliersList = await suppRes.json();
 
-    // Load products into search list
-    const prodList = document.getElementById('purchase-prod-list');
-    prodList.innerHTML = '';
-    products.forEach(p => {
-        const opt = document.createElement('option');
-        opt.value = p.name;
-        prodList.appendChild(opt);
-    });
+        // Load suppliers into dropdown
+        const suppSelect = document.getElementById('purchase-supplier');
+        suppSelect.innerHTML = '<option value="">Select Supplier</option>';
+        suppliersList.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.textContent = s.name;
+            suppSelect.appendChild(opt);
+        });
+
+        // Load products into search list
+        const prodList = document.getElementById('purchase-prod-list');
+        prodList.innerHTML = '';
+        products.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.name;
+            prodList.appendChild(opt);
+        });
+    } catch (err) {
+        console.error('Error initializing purchase modal:', err);
+    }
 
     updatePurchaseListUI();
     showModal(purchaseModal);
@@ -810,7 +821,7 @@ document.getElementById('btn-new-purchase').addEventListener('click', async () =
 
 document.getElementById('btn-close-purchase-modal').addEventListener('click', hideModal);
 
-document.getElementById('purchase-product-search').addEventListener('change', (e) => {
+document.getElementById('purchase-product-search').addEventListener('input', (e) => {
     const val = e.target.value;
     const prod = products.find(p => p.name === val);
     if (prod) {
@@ -820,23 +831,33 @@ document.getElementById('purchase-product-search').addEventListener('change', (e
 });
 
 document.getElementById('btn-add-item-to-purchase').addEventListener('click', () => {
-    const searchVal = document.getElementById('purchase-product-search').value;
-    const qty = parseInt(document.getElementById('purchase-qty').value);
-    const cost = parseFloat(document.getElementById('purchase-cost').value);
+    const searchInput = document.getElementById('purchase-product-search');
+    const searchVal = searchInput.value.trim();
+    const qtyInput = document.getElementById('purchase-qty');
+    const costInput = document.getElementById('purchase-cost');
+    
+    const qty = parseInt(qtyInput.value);
+    const cost = parseFloat(costInput.value);
 
-    const prod = products.find(p => p.name === searchVal);
-    if (!prod) return alert('Invalid Product selected');
+    if (!searchVal) return alert('Please select a product');
+
+    const prod = products.find(p => p.name.trim().toLowerCase() === searchVal.toLowerCase());
+    
+    if (!prod) {
+        return alert('Product not found. Please select an item from the search list.');
+    }
+    
     if (isNaN(qty) || qty <= 0) return alert('Enter a valid quantity');
     if (isNaN(cost)) return alert('Enter a valid cost price');
 
-    const existing = currentPurchaseItems.find(i => i.product_id === prod.id);
+    const existing = currentPurchaseItems.find(i => i.product_id === prod.id || i.product_id === prod._id);
     if (existing) {
         existing.quantity += qty;
         existing.cost = cost;
         existing.subtotal = existing.quantity * existing.cost;
     } else {
         currentPurchaseItems.push({
-            product_id: prod.id,
+            product_id: prod.id || prod._id,
             product_name: prod.name,
             quantity: qty,
             cost: cost,
@@ -844,9 +865,12 @@ document.getElementById('btn-add-item-to-purchase').addEventListener('click', ()
         });
     }
 
-    document.getElementById('purchase-product-search').value = '';
-    document.getElementById('purchase-qty').value = 1;
-    document.getElementById('purchase-cost').value = '';
+    // Reset inputs
+    searchInput.value = '';
+    qtyInput.value = 1;
+    costInput.value = '';
+    searchInput.focus();
+    
     updatePurchaseListUI();
 });
 
