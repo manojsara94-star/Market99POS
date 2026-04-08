@@ -384,10 +384,16 @@ app.get('/api/products', async (req, res) => {
 });
 
 app.post('/api/products', async (req, res) => {
-    const { name, description, category, quantity, low_stock_limit, cost, price, image } = req.body;
-    if (!name || quantity === undefined || price === undefined) {
-        return res.status(400).json({ error: 'Missing required fields' });
+    let { name, description, category, quantity, low_stock_limit, cost, price, image } = req.body;
+    if (!name) {
+        return res.status(400).json({ error: 'Item Name is required' });
     }
+    
+    // Set defaults for optional fields
+    quantity = (quantity === undefined || quantity === '') ? 0 : Number(quantity);
+    price = (price === undefined || price === '') ? 0 : Number(price);
+    cost = (cost === undefined || cost === '') ? 0 : Number(cost);
+    low_stock_limit = (low_stock_limit === undefined || low_stock_limit === '') ? 10 : Number(low_stock_limit);
     
     try {
         const product = await Product.create({
@@ -408,7 +414,14 @@ app.post('/api/products', async (req, res) => {
 });
 
 app.put('/api/products/:id', async (req, res) => {
-    const { name, description, category, quantity, low_stock_limit, cost, price, image } = req.body;
+    let { name, description, category, quantity, low_stock_limit, cost, price, image } = req.body;
+    
+    // Set defaults for optional fields
+    quantity = (quantity === undefined || quantity === '') ? 0 : Number(quantity);
+    price = (price === undefined || price === '') ? 0 : Number(price);
+    cost = (cost === undefined || cost === '') ? 0 : Number(cost);
+    low_stock_limit = (low_stock_limit === undefined || low_stock_limit === '') ? 10 : Number(low_stock_limit);
+
     try {
         const queryFilter = req.user.role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, user_id: req.user._id };
         const product = await Product.findOneAndUpdate(
