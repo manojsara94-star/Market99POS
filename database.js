@@ -47,6 +47,7 @@ const ProductSchema = new mongoose.Schema({
     cost: { type: Number, default: 0.0 },
     price: { type: Number, default: 0.0 },
     category: { type: String, default: 'General'},
+    supplier: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier' },
     image: { type: String }
 });
 
@@ -95,6 +96,14 @@ const ExpenseSchema = new mongoose.Schema({
     note: { type: String }
 });
 
+const SupplierSchema = new mongoose.Schema({
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    name: { type: String, required: true },
+    contact: { type: String, default: '' },
+    address: { type: String, default: '' },
+    note: { type: String, default: '' }
+});
+
 // -- MODELS --
 const User = mongoose.model('User', UserSchema);
 const Product = mongoose.model('Product', ProductSchema);
@@ -102,6 +111,8 @@ const Invoice = mongoose.model('Invoice', InvoiceSchema);
 const Category = mongoose.model('Category', CategorySchema);
 const Customer = mongoose.model('Customer', CustomerSchema);
 const Expense = mongoose.model('Expense', ExpenseSchema);
+
+const Supplier = mongoose.model('Supplier', SupplierSchema);
 
 // Create default admin user
 const initializeDatabase = async () => {
@@ -132,5 +143,6 @@ module.exports = {
     Invoice,
     Category,
     Customer,
-    Expense
+    Expense,
+    Supplier
 };

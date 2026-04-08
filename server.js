@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { connectDB, initializeDatabase, User, Product, Invoice, Category, Customer, Expense } = require('./database');
+const { connectDB, initializeDatabase, User, Product, Invoice, Category, Customer, Expense, Supplier } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -361,6 +361,7 @@ app.get('/api/products', async (req, res) => {
         const queryFilter = req.user.role === 'admin' ? {} : { user_id: req.user._id };
         const products = await Product.find(queryFilter)
             .populate('user_id', 'business_name')
+            .populate('supplier', 'name')
             .sort({ name: 1 });
         
         // Map _id to id for the frontend
@@ -374,7 +375,9 @@ app.get('/api/products', async (req, res) => {
             cost: p.cost || 0,
             price: p.price,
             image: p.image,
-            owner_name: p.user_id ? p.user_id.business_name : 'Unknown'
+            owner_name: p.user_id ? p.user_id.business_name : 'Unknown',
+            supplier_id: p.supplier ? p.supplier._id.toString() : null,
+            supplier_name: p.supplier ? p.supplier.name : 'Unknown'
         }));
         
         res.json(mappedProducts);
@@ -384,7 +387,7 @@ app.get('/api/products', async (req, res) => {
 });
 
 app.post('/api/products', async (req, res) => {
-    let { name, description, category, quantity, low_stock_limit, cost, price, image } = req.body;
+    let { name, description, category, quantity, low_stock_limit, cost, price, supplier, image } = req.body;
     if (!name) {
         return res.status(400).json({ error: 'Item Name is required' });
     }
@@ -402,19 +405,20 @@ app.post('/api/products', async (req, res) => {
             description,
             category: category || 'General',
             quantity,
-            low_stock_limit: low_stock_limit !== undefined ? low_stock_limit : 10,
-            cost: cost || 0,
+            low_stock_limit,
+            cost,
             price,
+            supplier: supplier || null,
             image
         });
-        res.status(201).json({ id: product._id.toString(), name, description, category: product.category, quantity, low_stock_limit: product.low_stock_limit, cost: product.cost, price, image });
+        res.status(201).json({ id: product._id.toString(), name, description, category: product.category, quantity, low_stock_limit: product.low_stock_limit, cost: product.cost, price, supplier: product.supplier, image });
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }
 });
 
 app.put('/api/products/:id', async (req, res) => {
-    let { name, description, category, quantity, low_stock_limit, cost, price, image } = req.body;
+    let { name, description, category, quantity, low_stock_limit, cost, price, supplier, image } = req.body;
     
     // Set defaults for optional fields
     quantity = (quantity === undefined || quantity === '') ? 0 : Number(quantity);
@@ -426,7 +430,7 @@ app.put('/api/products/:id', async (req, res) => {
         const queryFilter = req.user.role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, user_id: req.user._id };
         const product = await Product.findOneAndUpdate(
             queryFilter,
-            { name, description, category: category || 'General', quantity, low_stock_limit: low_stock_limit !== undefined ? low_stock_limit : 10, cost, price, image },
+            { name, description, category: category || 'General', quantity, low_stock_limit, cost, price, supplier: supplier || null, image },
             { new: true }
         );
         if (!product) return res.status(404).json({ error: 'Product not found' });
@@ -697,6 +701,68 @@ app.post('/api/marketplace/enable', async (req, res) => {
     try {
         await User.findByIdAndUpdate(req.user._id, { marketplace_enabled: true });
         res.json({ message: 'Marketplace enabled successfully' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// ==== SUPPLIERS API ====
+
+app.get('/api/suppliers', async (req, res) => {
+    try {
+        const queryFilter = req.user.role === 'admin' ? {} : { user_id: req.user._id };
+        const suppliers = await Supplier.find(queryFilter).sort({ name: 1 });
+        res.json(suppliers.map(s => ({
+            id: s._id.toString(),
+            name: s.name,
+            contact: s.contact,
+            address: s.address,
+            note: s.note
+        })));
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/suppliers', async (req, res) => {
+    const { name, contact, address, note } = req.body;
+    if (!name) return res.status(400).json({ error: 'Name is required' });
+    try {
+        const supplier = await Supplier.create({
+            user_id: req.user._id,
+            name,
+            contact,
+            address,
+            note
+        });
+        res.status(201).json({ id: supplier._id.toString(), name, contact, address, note });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.put('/api/suppliers/:id', async (req, res) => {
+    const { name, contact, address, note } = req.body;
+    try {
+        const queryFilter = req.user.role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, user_id: req.user._id };
+        const supplier = await Supplier.findOneAndUpdate(
+            queryFilter,
+            { name, contact, address, note },
+            { new: true }
+        );
+        if (!supplier) return res.status(404).json({ error: 'Supplier not found' });
+        res.json({ message: 'Supplier updated successfully' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete('/api/suppliers/:id', async (req, res) => {
+    try {
+        const queryFilter = req.user.role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, user_id: req.user._id };
+        const supplier = await Supplier.findOneAndDelete(queryFilter);
+        if (!supplier) return res.status(404).json({ error: 'Supplier not found' });
+        res.json({ message: 'Supplier deleted successfully' });
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }

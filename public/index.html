@@ -120,6 +120,12 @@
                     </a>
                 </li>
                 <li>
+                    <a href="#" class="nav-link" data-target="suppliers-view">
+                        <i class='bx bx-truck icon'></i>
+                        <span class="link-name">Suppliers</span>
+                    </a>
+                </li>
+                <li>
                     <a href="#" class="nav-link" data-target="settings-view">
                         <i class='bx bx-cog icon'></i>
                         <span class="link-name">Settings</span>
@@ -390,6 +396,7 @@
                                         <th>Item Name</th>
                                         <th>Quantity</th>
                                         <th>Category</th>
+                                        <th>Supplier</th>
                                         <th>Cost</th>
                                         <th>Price</th>
                                         <th>Actions</th>
@@ -451,6 +458,36 @@
                                         <th>Title</th>
                                         <th>Category</th>
                                         <th>Amount</th>
+                                        <th>Note</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Suppliers View -->
+                <section id="suppliers-view" class="view">
+                    <div class="view-header">
+                        <h2>Product Suppliers</h2>
+                        <div class="header-actions">
+                            <button class="btn btn-primary" id="btn-add-supplier">
+                                <i class='bx bx-plus'></i> Add Supplier
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-card">
+                        <div class="table-responsive">
+                            <table class="data-table" id="suppliers-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Contact No</th>
+                                        <th>Address</th>
                                         <th>Note</th>
                                         <th>Actions</th>
                                     </tr>
@@ -642,6 +679,12 @@
                                     <option value="">Select Category</option>
                                 </select>
                             </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Supplier <i class='bx bx-truck' style="font-size:12px; margin-left:5px;"></i></label>
+                            <select id="product-supplier" class="form-control">
+                                <option value="">Select Supplier (Optional)</option>
+                            </select>
                         </div>
                         <div class="form-group">
                             <label>Description / Details</label>
@@ -865,6 +908,38 @@
                             <textarea id="expense-note" class="form-control" rows="2"></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary btn-block">Save Expense</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Supplier Modal -->
+            <div class="modal" id="supplier-modal" style="max-width:500px;">
+                <div class="modal-header">
+                    <h3 id="supplier-modal-title">Add Supplier</h3>
+                    <button class="close-btn" id="btn-close-supplier-modal"><i class='bx bx-x'></i></button>
+                </div>
+                <div class="modal-body">
+                    <form id="supplier-form">
+                        <input type="hidden" id="supplier-id">
+                        <div class="form-group">
+                            <label>Supplier Name</label>
+                            <input type="text" id="supplier-name" class="form-control" required placeholder="e.g. Acme Lanka Ltd">
+                        </div>
+                        <div class="form-group" style="display: flex; gap: 10px;">
+                            <div style="flex: 1;">
+                                <label>Contact Number</label>
+                                <input type="text" id="supplier-contact" class="form-control" placeholder="e.g. 0112XXXXXX">
+                            </div>
+                            <div style="flex: 1;">
+                                <label>Address</label>
+                                <input type="text" id="supplier-address" class="form-control" placeholder="e.g. Colombo 03">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Internal Note</label>
+                            <textarea id="supplier-note" class="form-control" rows="2" placeholder="Bank details, representative name, etc."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Save Supplier Details</button>
                     </form>
                 </div>
             </div>

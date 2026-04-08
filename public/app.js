@@ -163,6 +163,7 @@ function hideModal() {
 
 // ==== UTILS ====
 let products = [];
+let suppliersList = [];
 let currentBill = [];
 let currentTab = 'dashboard-view';
 let chartInstance = null;
@@ -184,6 +185,7 @@ const invoiceModal = document.getElementById('invoice-modal');
 const adminUserModal = document.getElementById('admin-user-modal');
 const customerModal = document.getElementById('customer-modal');
 const expenseModal = document.getElementById('expense-modal');
+const supplierModal = document.getElementById('supplier-modal');
 
 // ==== INITIALIZATION ====
 document.addEventListener('DOMContentLoaded', () => {
@@ -229,6 +231,7 @@ function setupNavigation() {
             if (target === 'pos-view') loadPOS();
             if (target === 'invoices-view') loadInvoices();
             if (target === 'reports-view') loadReports();
+            if (target === 'suppliers-view') loadSuppliers();
             if (target === 'admin-view') loadAdminUsers();
             if (target === 'settings-view') loadSettings();
         });
@@ -359,15 +362,17 @@ function setupModals() {
         const low_stock_limit = document.getElementById('product-low-stock').value;
         const cost = document.getElementById('product-cost').value;
         const price = document.getElementById('product-price').value;
+        const supplier = document.getElementById('product-supplier').value;
 
         const payload = {
             name,
             description,
             category,
-            quantity: parseInt(qty),
-            low_stock_limit: parseInt(low_stock_limit),
-            cost: parseFloat(cost),
-            price: parseFloat(price),
+            quantity: parseInt(qty) || 0,
+            low_stock_limit: parseInt(low_stock_limit) || 10,
+            cost: parseFloat(cost) || 0,
+            price: parseFloat(price) || 0,
+            supplier: supplier || null,
             image: currentProductImageBase64
         };
         const method = id ? 'PUT' : 'POST';
@@ -636,6 +641,108 @@ async function deleteCustomer(id) {
     }
 }
 
+// ==== SUPPLIERS ====
+
+async function loadSuppliers() {
+    try {
+        const res = await fetchAuth(`${API_BASE}/suppliers`);
+        suppliersList = await res.json();
+        
+        // Populating the grid
+        const tbody = document.querySelector('#suppliers-table tbody');
+        tbody.innerHTML = '';
+        suppliersList.forEach(s => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${s.name}</strong></td>
+                <td>${s.contact || '-'}</td>
+                <td>${s.address || '-'}</td>
+                <td><small>${s.note || '-'}</small></td>
+                <td>
+                    <div class="header-actions">
+                         <button class="btn btn-outline btn-icon-only edit-supp-btn" data-id="${s.id}"><i class='bx bx-edit'></i></button>
+                         <button class="btn btn-danger btn-icon-only del-supp-btn" data-id="${s.id}"><i class='bx bx-trash'></i></button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Updating the dropdown in product modal
+        const prodSuppSelect = document.getElementById('product-supplier');
+        if (prodSuppSelect) {
+            const currentVal = prodSuppSelect.value;
+            prodSuppSelect.innerHTML = '<option value="">Select Supplier (Optional)</option>';
+            suppliersList.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.name;
+                prodSuppSelect.appendChild(opt);
+            });
+            prodSuppSelect.value = currentVal;
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+document.getElementById('btn-add-supplier').addEventListener('click', () => {
+    document.getElementById('supplier-form').reset();
+    document.getElementById('supplier-id').value = '';
+    document.getElementById('supplier-modal-title').textContent = 'Add Supplier';
+    showModal(supplierModal);
+});
+
+document.getElementById('btn-close-supplier-modal').addEventListener('click', hideModal);
+
+document.getElementById('supplier-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('supplier-id').value;
+    const name = document.getElementById('supplier-name').value;
+    const contact = document.getElementById('supplier-contact').value;
+    const address = document.getElementById('supplier-address').value;
+    const note = document.getElementById('supplier-note').value;
+
+    try {
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `${API_BASE}/suppliers/${id}` : `${API_BASE}/suppliers`;
+        const res = await fetchAuth(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, contact, address, note })
+        });
+        if (!res.ok) throw new Error('Action failed');
+        hideModal();
+        loadSuppliers();
+    } catch (err) {
+        alert(err.message);
+    }
+});
+
+document.querySelector('#suppliers-table tbody').addEventListener('click', (e) => {
+    const editBtn = e.target.closest('.edit-supp-btn');
+    if (editBtn) {
+        const id = editBtn.dataset.id;
+        const supp = suppliersList.find(s => s.id == id);
+        if (supp) {
+            document.getElementById('supplier-id').value = id;
+            document.getElementById('supplier-name').value = supp.name;
+            document.getElementById('supplier-contact').value = supp.contact || '';
+            document.getElementById('supplier-address').value = supp.address || '';
+            document.getElementById('supplier-note').value = supp.note || '';
+            document.getElementById('supplier-modal-title').textContent = 'Edit Supplier';
+            showModal(supplierModal);
+        }
+    }
+    const delBtn = e.target.closest('.del-supp-btn');
+    if (delBtn) {
+        if (confirm('Delete this supplier?')) {
+            fetchAuth(`${API_BASE}/suppliers/${delBtn.dataset.id}`, { method: 'DELETE' })
+                .then(() => loadSuppliers());
+        }
+    }
+});
+
 // ==== EXPENSES ====
 let expensesList = [];
 
@@ -869,6 +976,7 @@ async function loadInventory() {
             filterBadge.style.display = 'none';
         }
 
+        await loadSuppliers(); // Fetch latest suppliers
         productsToRender.forEach(p => {
             const imgHtml = p.image ? `<img src="${p.image}" style="width:40px;height:40px;border-radius:8px;object-fit:cover;">` : `<div style="width:40px;height:40px;border-radius:8px;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#64748b;">No Img</div>`;
             const tr = document.createElement('tr');
@@ -882,11 +990,14 @@ async function loadInventory() {
                 <td style="display:flex;align-items:center;gap:12px;">${imgHtml} ${nameDisplay}</td>
                 <td class="${p.quantity <= (p.low_stock_limit !== undefined ? p.low_stock_limit : 10) ? 'text-danger' : ''}">${p.quantity}</td>
                 <td><span class="badge" style="background:#eef2f6;color:var(--text-color);">${p.category || 'General'}</span></td>
+                <td style="font-size:13px; font-weight:600; color:var(--text-muted);">${p.supplier_name || 'No Supplier'}</td>
                 <td>${formatCurrency(p.cost || 0)}</td>
                 <td>${formatCurrency(p.price)}</td>
                 <td>
-                    <button class="btn btn-outline btn-icon-only edit-btn" data-id="${p.id}"><i class='bx bx-edit'></i></button>
-                    <button class="btn btn-danger btn-icon-only del-btn" data-id="${p.id}"><i class='bx bx-trash'></i></button>
+                    <div class="header-actions">
+                        <button class="btn btn-outline btn-icon-only edit-btn" data-id="${p.id}"><i class='bx bx-edit'></i></button>
+                        <button class="btn btn-danger btn-icon-only del-btn" data-id="${p.id}"><i class='bx bx-trash'></i></button>
+                    </div>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -946,6 +1057,7 @@ function editProduct(id) {
         document.getElementById('product-low-stock').value = p.low_stock_limit !== undefined ? p.low_stock_limit : 10;
         document.getElementById('product-cost').value = p.cost || 0;
         document.getElementById('product-price').value = p.price;
+        document.getElementById('product-supplier').value = p.supplier_id || '';
 
         currentProductImageBase64 = p.image || null;
         if (p.image) {
