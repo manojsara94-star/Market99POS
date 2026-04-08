@@ -189,6 +189,7 @@ const customerModal = document.getElementById('customer-modal');
 const expenseModal = document.getElementById('expense-modal');
 const supplierModal = document.getElementById('supplier-modal');
 const purchaseModal = document.getElementById('purchase-modal');
+const purchasePaymentModal = document.getElementById('purchase-payment-modal');
 
 // ==== INITIALIZATION ====
 document.addEventListener('DOMContentLoaded', () => {
@@ -772,6 +773,7 @@ async function loadPurchases() {
                 <td><span class="badge" style="background:var(--${statusClass}-light); color:var(--text-color);">${statusText}</span></td>
                 <td>
                     <button class="btn btn-outline btn-icon-only view-purchase-btn" data-id="${p._id || p.id}"><i class='bx bx-show'></i></button>
+                    ${balanceVal > 0 ? `<button class="btn btn-primary btn-icon-only pay-purchase-btn" data-id="${p._id || p.id}" style="margin-left:5px;" title="Add Payment"><i class='bx bx-money'></i></button>` : ''}
                 </td>
             `;
             tbody.appendChild(tr);
@@ -779,7 +781,96 @@ async function loadPurchases() {
     } catch (err) { console.error(err); }
 }
 
+document.querySelector('#purchases-table tbody').addEventListener('click', (e) => {
+    const viewBtn = e.target.closest('.view-purchase-btn');
+    if (viewBtn) {
+        const id = viewBtn.dataset.id;
+        const purchase = purchasesList.find(p => (p._id || p.id) == id);
+        if (purchase) {
+            // View Mode
+            document.getElementById('purchase-supplier').disabled = true;
+            document.getElementById('purchase-date').disabled = true;
+            document.getElementById('btn-add-item-to-purchase').style.display = 'none';
+            document.getElementById('purchase-product-search').parentElement.parentElement.style.display = 'none';
+            document.getElementById('btn-save-purchase').style.display = 'none';
+            document.getElementById('purchase-paid-amount').disabled = true;
+            document.querySelector('#purchase-modal h3').textContent = `Purchase Detail: ${purchase.purchase_number}`;
+
+            // Ensure suppliers are loaded into dropdown first
+            const suppSelect = document.getElementById('purchase-supplier');
+            suppSelect.innerHTML = '<option value="">Select Supplier</option>';
+            suppliersList.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.name;
+                suppSelect.appendChild(opt);
+            });
+
+            currentPurchaseItems = purchase.items || [];
+            document.getElementById('purchase-supplier').value = purchase.supplier_id || '';
+            document.getElementById('purchase-date').value = purchase.date;
+            document.getElementById('purchase-paid-amount').value = purchase.paid_amount;
+            
+            updatePurchaseListUI();
+            
+            // Hide delete buttons in rows for view mode
+            setTimeout(() => {
+                document.querySelectorAll('.remove-pur-item').forEach(b => b.style.display = 'none');
+            }, 100);
+
+            showModal(purchaseModal);
+        }
+    }
+    const payBtn = e.target.closest('.pay-purchase-btn');
+    if (payBtn) {
+        const id = payBtn.dataset.id;
+        const purchase = purchasesList.find(p => (p._id || p.id) == id);
+        if (purchase) {
+            document.getElementById('pay-pur-id').value = id;
+            document.getElementById('pay-pur-number').textContent = purchase.purchase_number;
+            document.getElementById('pay-pur-balance').textContent = formatCurrency(purchase.balance_amount);
+            document.getElementById('pay-pur-amount').value = purchase.balance_amount;
+            document.getElementById('pay-pur-amount').max = purchase.balance_amount;
+            showModal(purchasePaymentModal);
+        }
+    }
+});
+
+document.getElementById('btn-close-pay-pur-modal').addEventListener('click', hideModal);
+
+document.getElementById('purchase-payment-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('pay-pur-id').value;
+    const amount = document.getElementById('pay-pur-amount').value;
+
+    try {
+        const res = await fetchAuth(`${API_BASE}/purchases/${id}/payment`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount })
+        });
+        if (res.ok) {
+            hideModal();
+            loadPurchases();
+            loadDashboard();
+            alert('Payment recorded successfully');
+        } else {
+            const err = await res.json();
+            alert(err.error || 'Failed to record payment');
+        }
+    } catch (err) { console.error(err); }
+});
+
 document.getElementById('btn-new-purchase').addEventListener('click', async () => {
+    // Reset view-only states
+    document.getElementById('purchase-supplier').disabled = false;
+    document.getElementById('purchase-date').disabled = false;
+    document.getElementById('btn-add-item-to-purchase').style.display = 'block';
+    document.getElementById('purchase-product-search').parentElement.parentElement.style.display = 'flex';
+    document.getElementById('btn-save-purchase').style.display = 'block';
+    document.getElementById('purchase-paid-amount').disabled = false;
+    document.querySelector('#purchase-modal h3').textContent = 'New Stock Entry (Purchase)';
+
     currentPurchaseItems = [];
     document.getElementById('purchase-paid-amount').value = 0;
     document.getElementById('purchase-date').value = new Date().toISOString().split('T')[0];

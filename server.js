@@ -824,6 +824,32 @@ app.post('/api/purchases', async (req, res) => {
     }
 });
 
+app.put('/api/purchases/:id/payment', async (req, res) => {
+    const { amount } = req.body;
+    if (!amount || isNaN(amount) || amount <= 0) return res.status(400).json({ error: 'Invalid payment amount' });
+
+    try {
+        const queryFilter = req.user.role === 'admin' ? { _id: req.params.id } : { _id: req.params.id, user_id: req.user._id };
+        const purchase = await Purchase.findOne(queryFilter);
+        if (!purchase) return res.status(404).json({ error: 'Purchase record not found' });
+
+        purchase.paid_amount += parseFloat(amount);
+        purchase.balance_amount = purchase.total_amount - purchase.paid_amount;
+        
+        if (purchase.balance_amount <= 0) {
+            purchase.payment_status = 'Paid';
+            purchase.balance_amount = 0; // Avoid negative balance
+        } else {
+            purchase.payment_status = 'Partial';
+        }
+
+        await purchase.save();
+        res.json({ message: 'Payment recorded successfully', purchase });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
 // ==== USER SETTINGS API ====
 
 app.get('/api/user/settings', async (req, res) => {
