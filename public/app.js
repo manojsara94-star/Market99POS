@@ -1542,6 +1542,17 @@ function updateBillUI() {
     } else {
         discountRow.style.display = 'none';
     }
+
+    // Update balance display based on paid input
+    const paidField = document.getElementById('pos-paid-amount');
+    const paidVal = parseFloat(paidField.value);
+    const balanceEl = document.getElementById('pos-balance-display');
+    if (!isNaN(paidVal) && paidVal < total) {
+        balanceEl.textContent = `Balance (Credit): ${formatCurrency(total - paidVal)}`;
+        balanceEl.style.display = 'block';
+    } else {
+        balanceEl.style.display = 'none';
+    }
 }
 
 window.updateItemDiscount = function (id, val) {
@@ -1565,10 +1576,14 @@ async function submitCurrentBill(autoPrint) {
     const customerContact = document.getElementById('pos-customer-contact').value.trim();
     const customerAddress = document.getElementById('pos-customer-address').value.trim();
 
+    // Payment tracking
+    const paidRaw = parseFloat(document.getElementById('pos-paid-amount').value);
+    const paid_amount = isNaN(paidRaw) ? total : paidRaw;
+    const balance_amount = Math.max(0, total - paid_amount);
+    const payment_status = balance_amount > 0 ? 'Credit' : 'Paid';
+
     const now = new Date();
-    // Helper to format as local date (YYYY-MM-DD)
     const localDate = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
-    // Helper to format as local time (HH:MM)
     const localTime = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
 
     const payload = {
@@ -1578,6 +1593,9 @@ async function submitCurrentBill(autoPrint) {
         customer_name: customerName,
         customer_contact: customerContact,
         customer_address: customerAddress,
+        paid_amount,
+        balance_amount,
+        payment_status,
         date: localDate,
         time: localTime
     };
@@ -1598,6 +1616,8 @@ async function submitCurrentBill(autoPrint) {
 
         // Clear bill
         currentBill = [];
+        document.getElementById('pos-paid-amount').value = '';
+        document.getElementById('pos-balance-display').style.display = 'none';
         updateBillUI();
 
         // Reload products & customers cache
@@ -1625,6 +1645,9 @@ async function submitCurrentBill(autoPrint) {
 
 document.getElementById('btn-submit-bill').addEventListener('click', () => submitCurrentBill(false));
 document.getElementById('btn-submit-print').addEventListener('click', () => submitCurrentBill(true));
+
+// Live balance display when paid amount changes
+document.getElementById('pos-paid-amount').addEventListener('input', () => updateBillUI());
 
 function showInvoicePrintout(invoice, autoPrint = true) {
     lastInvoiceShown = invoice;
@@ -1758,15 +1781,24 @@ async function loadInvoices() {
                 invDisplay += `<div style="font-size:11px;color:var(--primary);margin-top:2px;">[${inv.owner_name}]</div>`;
             }
 
+            const balance = inv.balance_amount || 0;
+            const paid = inv.paid_amount !== undefined ? inv.paid_amount : inv.total_amount;
+            const status = inv.payment_status || 'Paid';
+            const statusColor = status === 'Paid' ? 'var(--success)' : status === 'Partial' ? '#f59e0b' : 'var(--danger)';
+            const statusBg = status === 'Paid' ? 'var(--success-light)' : status === 'Partial' ? '#fef3c7' : 'var(--danger-light)';
+
             tr.innerHTML = `
-                <td>${invDisplay}</td>
-                <td>${inv.date}</td>
-                <td>${inv.time}</td>
+                <td><strong>${invDisplay}</strong><div style="font-size:11px;color:var(--text-muted);">${inv.date} ${inv.time}</div></td>
+                <td>${inv.customer_name || '<span style="color:var(--text-muted)">Walk-in</span>'}</td>
                 <td style="font-weight:bold">${formatCurrency(inv.total_amount)}</td>
+                <td style="color:var(--success); font-weight:600">${formatCurrency(paid)}</td>
+                <td style="color:var(--danger); font-weight:600">${balance > 0 ? formatCurrency(balance) : '<span style="color:var(--success)">-</span>'}</td>
+                <td><span style="background:${statusBg}; color:${statusColor}; padding:3px 10px; border-radius:20px; font-size:12px; font-weight:600;">${status}</span></td>
                 <td>
-                    <button class="btn btn-outline btn-icon-only view-invoice-btn" data-id="${inv.id}" title="View Details"><i class='bx bx-show'></i></button>
-                    <button class="btn btn-primary btn-icon-only print-invoice-btn" data-id="${inv.id}" title="Print Receipt"><i class='bx bx-printer'></i></button>
-                    <button class="btn btn-danger btn-icon-only delete-invoice-btn" data-id="${inv.id}" title="Delete Invoice"><i class='bx bx-trash'></i></button>
+                    <button class="btn btn-outline btn-icon-only view-invoice-btn" data-id="${inv.id}" title="View"><i class='bx bx-show'></i></button>
+                    <button class="btn btn-primary btn-icon-only print-invoice-btn" data-id="${inv.id}" title="Print"><i class='bx bx-printer'></i></button>
+                    ${balance > 0 ? `<button class="btn btn-icon-only pay-invoice-btn" style="background:#f59e0b;color:white;" data-id="${inv.id}" data-balance="${balance}" data-number="${inv.invoice_number}" title="Add Payment"><i class='bx bx-money'></i></button>` : ''}
+                    <button class="btn btn-danger btn-icon-only delete-invoice-btn" data-id="${inv.id}" title="Delete"><i class='bx bx-trash'></i></button>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -1796,10 +1828,46 @@ async function loadInvoices() {
             });
         });
 
+        document.querySelectorAll('.pay-invoice-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const b = e.currentTarget;
+                document.getElementById('pay-inv-id').value = b.dataset.id;
+                document.getElementById('pay-inv-number').textContent = b.dataset.number;
+                document.getElementById('pay-inv-balance').textContent = formatCurrency(parseFloat(b.dataset.balance));
+                document.getElementById('pay-inv-amount').value = b.dataset.balance;
+                document.getElementById('pay-inv-amount').max = b.dataset.balance;
+                showModal(invoicePaymentModal);
+            });
+        });
+
     } catch (err) {
         console.error(err);
     }
 }
+
+document.getElementById('btn-close-pay-inv-modal').addEventListener('click', hideModal);
+
+document.getElementById('invoice-payment-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = document.getElementById('pay-inv-id').value;
+    const amount = document.getElementById('pay-inv-amount').value;
+    try {
+        const res = await fetchAuth(`${API_BASE}/invoices/${id}/payment`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount })
+        });
+        if (res.ok) {
+            hideModal();
+            loadInvoices();
+            loadDashboard();
+            alert('Customer payment recorded successfully!');
+        } else {
+            const err = await res.json();
+            alert(err.error || 'Failed to record payment');
+        }
+    } catch (err) { console.error(err); }
+});
 
 document.getElementById('filter-date').addEventListener('change', () => {
     document.getElementById('filter-month').value = '';
