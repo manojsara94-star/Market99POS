@@ -164,6 +164,8 @@ function hideModal() {
 // ==== UTILS ====
 let products = [];
 let suppliersList = [];
+let purchasesList = [];
+let currentPurchaseItems = [];
 let currentBill = [];
 let currentTab = 'dashboard-view';
 let chartInstance = null;
@@ -186,6 +188,7 @@ const adminUserModal = document.getElementById('admin-user-modal');
 const customerModal = document.getElementById('customer-modal');
 const expenseModal = document.getElementById('expense-modal');
 const supplierModal = document.getElementById('supplier-modal');
+const purchaseModal = document.getElementById('purchase-modal');
 
 // ==== INITIALIZATION ====
 document.addEventListener('DOMContentLoaded', () => {
@@ -232,6 +235,7 @@ function setupNavigation() {
             if (target === 'invoices-view') loadInvoices();
             if (target === 'reports-view') loadReports();
             if (target === 'suppliers-view') loadSuppliers();
+            if (target === 'purchases-view') loadPurchases();
             if (target === 'admin-view') loadAdminUsers();
             if (target === 'settings-view') loadSettings();
         });
@@ -743,6 +747,188 @@ document.querySelector('#suppliers-table tbody').addEventListener('click', (e) =
     }
 });
 
+// ==== PURCHASES (STOCK-IN) ====
+
+async function loadPurchases() {
+    try {
+        const res = await fetchAuth(`${API_BASE}/purchases`);
+        purchasesList = await res.json();
+        const tbody = document.querySelector('#purchases-table tbody');
+        tbody.innerHTML = '';
+
+        purchasesList.forEach(p => {
+            const tr = document.createElement('tr');
+            const balanceVal = p.balance_amount || 0;
+            const statusText = balanceVal <= 0 ? 'Paid' : (p.paid_amount > 0 ? 'Partial' : 'Credit');
+            const statusClass = statusText === 'Paid' ? 'success' : (statusText === 'Partial' ? 'warning' : 'danger');
+
+            tr.innerHTML = `
+                <td><strong>${p.purchase_number}</strong></td>
+                <td>${p.date}</td>
+                <td>${p.supplier_name || 'N/A'}</td>
+                <td>${formatCurrency(p.total_amount)}</td>
+                <td style="color:var(--primary);">${formatCurrency(p.paid_amount || 0)}</td>
+                <td style="color:var(--danger);">${formatCurrency(p.balance_amount || 0)}</td>
+                <td><span class="badge" style="background:var(--${statusClass}-light); color:var(--text-color);">${statusText}</span></td>
+                <td>
+                    <button class="btn btn-outline btn-icon-only view-purchase-btn" data-id="${p._id || p.id}"><i class='bx bx-show'></i></button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (err) { console.error(err); }
+}
+
+document.getElementById('btn-new-purchase').addEventListener('click', async () => {
+    currentPurchaseItems = [];
+    document.getElementById('purchase-paid-amount').value = 0;
+    document.getElementById('purchase-date').value = new Date().toISOString().split('T')[0];
+    
+    // Load suppliers into dropdown
+    await loadSuppliers();
+    const suppSelect = document.getElementById('purchase-supplier');
+    suppSelect.innerHTML = '<option value="">Select Supplier</option>';
+    suppliersList.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.name;
+        suppSelect.appendChild(opt);
+    });
+
+    // Load products into search list
+    const prodList = document.getElementById('purchase-prod-list');
+    prodList.innerHTML = '';
+    products.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.name;
+        prodList.appendChild(opt);
+    });
+
+    updatePurchaseListUI();
+    showModal(purchaseModal);
+});
+
+document.getElementById('btn-close-purchase-modal').addEventListener('click', hideModal);
+
+document.getElementById('purchase-product-search').addEventListener('change', (e) => {
+    const val = e.target.value;
+    const prod = products.find(p => p.name === val);
+    if (prod) {
+        document.getElementById('purchase-qty').value = 1;
+        document.getElementById('purchase-cost').value = prod.cost || 0;
+    }
+});
+
+document.getElementById('btn-add-item-to-purchase').addEventListener('click', () => {
+    const searchVal = document.getElementById('purchase-product-search').value;
+    const qty = parseInt(document.getElementById('purchase-qty').value);
+    const cost = parseFloat(document.getElementById('purchase-cost').value);
+
+    const prod = products.find(p => p.name === searchVal);
+    if (!prod) return alert('Invalid Product selected');
+    if (isNaN(qty) || qty <= 0) return alert('Enter a valid quantity');
+    if (isNaN(cost)) return alert('Enter a valid cost price');
+
+    const existing = currentPurchaseItems.find(i => i.product_id === prod.id);
+    if (existing) {
+        existing.quantity += qty;
+        existing.cost = cost;
+        existing.subtotal = existing.quantity * existing.cost;
+    } else {
+        currentPurchaseItems.push({
+            product_id: prod.id,
+            product_name: prod.name,
+            quantity: qty,
+            cost: cost,
+            subtotal: qty * cost
+        });
+    }
+
+    document.getElementById('purchase-product-search').value = '';
+    document.getElementById('purchase-qty').value = 1;
+    document.getElementById('purchase-cost').value = '';
+    updatePurchaseListUI();
+});
+
+function updatePurchaseListUI() {
+    const tbody = document.querySelector('#purchase-items-table tbody');
+    tbody.innerHTML = '';
+    let total = 0;
+
+    currentPurchaseItems.forEach((item, index) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${item.product_name}</td>
+            <td>${item.quantity}</td>
+            <td>${formatCurrency(item.cost)}</td>
+            <td>${formatCurrency(item.subtotal)}</td>
+            <td><button class="btn btn-danger btn-icon-only remove-pur-item" data-index="${index}"><i class='bx bx-trash'></i></button></td>
+        `;
+        tbody.appendChild(tr);
+        total += item.subtotal;
+    });
+
+    document.getElementById('purchase-total-display').textContent = formatCurrency(total);
+    updatePurchaseBalance();
+}
+
+document.querySelector('#purchase-items-table tbody').addEventListener('click', (e) => {
+    const btn = e.target.closest('.remove-pur-item');
+    if (btn) {
+        const index = parseInt(btn.dataset.index);
+        currentPurchaseItems.splice(index, 1);
+        updatePurchaseListUI();
+    }
+});
+
+function updatePurchaseBalance() {
+    const total = currentPurchaseItems.reduce((sum, i) => sum + i.subtotal, 0);
+    const paid = parseFloat(document.getElementById('purchase-paid-amount').value) || 0;
+    const balance = total - paid;
+    document.getElementById('purchase-balance-display').textContent = `Balance: ${formatCurrency(balance)}`;
+}
+
+document.getElementById('purchase-paid-amount').addEventListener('input', updatePurchaseBalance);
+
+document.getElementById('btn-save-purchase').addEventListener('click', async () => {
+    if (currentPurchaseItems.length === 0) return alert('Add items to entry first');
+    const supplierId = document.getElementById('purchase-supplier').value;
+    const date = document.getElementById('purchase-date').value;
+    const paidAmount = parseFloat(document.getElementById('purchase-paid-amount').value) || 0;
+    const totalAmount = currentPurchaseItems.reduce((sum, i) => sum + i.subtotal, 0);
+
+    if (!supplierId || !date) return alert('Supplier and Date are required');
+
+    const supplier = suppliersList.find(s => s.id === supplierId);
+
+    const payload = {
+        supplier_id: supplierId,
+        supplier_name: supplier ? supplier.name : 'Unknown',
+        date,
+        total_amount: totalAmount,
+        paid_amount: paidAmount,
+        items: currentPurchaseItems
+    };
+
+    try {
+        const res = await fetchAuth(`${API_BASE}/purchases`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            hideModal();
+            loadPurchases();
+            loadInventory();
+            loadDashboard();
+            alert('Stock entry and inventory update completed!');
+        } else {
+            const err = await res.json();
+            alert(err.error || 'Failed to complete entry');
+        }
+    } catch (err) { console.error(err); }
+});
+
 // ==== EXPENSES ====
 let expensesList = [];
 
@@ -878,6 +1064,7 @@ async function loadDashboard() {
         document.getElementById('dash-total-products').textContent = stats.totalProducts;
         document.getElementById('dash-asset-value').textContent = formatCurrency(stats.totalAssetValue);
         document.getElementById('dash-low-stock').textContent = stats.lowStockProducts;
+        document.getElementById('dash-supplier-credit').textContent = formatCurrency(stats.supplierCredit || 0);
 
         // Show/Hide Low Stock Alert Banner
         const alertBanner = document.getElementById('low-stock-alert-banner');

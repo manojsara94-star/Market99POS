@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { connectDB, initializeDatabase, User, Product, Invoice, Category, Customer, Expense, Supplier } = require('./database');
+const { connectDB, initializeDatabase, User, Product, Invoice, Category, Customer, Expense, Supplier, Purchase } = require('./database');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -180,6 +180,10 @@ app.get('/api/dashboard', async (req, res) => {
         const totalProducts = productsForAssets.length;
         const lowStockProducts = productsForAssets.filter(p => p.quantity <= (p.low_stock_limit !== undefined ? p.low_stock_limit : 10)).length;
 
+        // Supplier Credit (Total Balance Owe)
+        const allPurchases = await Purchase.find(queryFilter);
+        const supplierCredit = allPurchases.reduce((sum, p) => sum + (p.balance_amount || 0), 0);
+
         res.json({
             totalBillsToday,
             totalBillsMonth,
@@ -191,7 +195,8 @@ app.get('/api/dashboard', async (req, res) => {
             monthlyProfit: monthlyProfitRaw - monthlyExpenseTotal,
             totalProducts,
             lowStockProducts,
-            totalAssetValue
+            totalAssetValue,
+            supplierCredit
         });
     } catch (err) {
         return res.status(500).json({ error: err.message });
@@ -763,6 +768,57 @@ app.delete('/api/suppliers/:id', async (req, res) => {
         const supplier = await Supplier.findOneAndDelete(queryFilter);
         if (!supplier) return res.status(404).json({ error: 'Supplier not found' });
         res.json({ message: 'Supplier deleted successfully' });
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// ==== PURCHASES API ====
+
+app.get('/api/purchases', async (req, res) => {
+    try {
+        const queryFilter = req.user.role === 'admin' ? {} : { user_id: req.user._id };
+        const purchases = await Purchase.find(queryFilter).sort({ date: -1, _id: -1 });
+        res.json(purchases);
+    } catch (err) {
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/purchases', async (req, res) => {
+    const { supplier_id, supplier_name, date, total_amount, paid_amount, payment_status, items } = req.body;
+    
+    if (!items || items.length === 0) return res.status(400).json({ error: 'No items in purchase' });
+    
+    try {
+        const balance_amount = total_amount - (paid_amount || 0);
+        
+        // Generate Purchase Number
+        const count = await Purchase.countDocuments({ user_id: req.user._id });
+        const purchase_number = `PUR-${(count + 1).toString().padStart(5, '0')}`;
+        
+        const purchase = await Purchase.create({
+            user_id: req.user._id,
+            purchase_number,
+            supplier_id,
+            supplier_name,
+            date,
+            total_amount,
+            paid_amount,
+            balance_amount,
+            payment_status: payment_status || (balance_amount <= 0 ? 'Paid' : (paid_amount > 0 ? 'Partial' : 'Credit')),
+            items
+        });
+        
+        // Update Inventory and Product Cost
+        for (const item of items) {
+            await Product.findByIdAndUpdate(item.product_id, {
+                $inc: { quantity: item.quantity },
+                $set: { cost: item.cost } // Update cost to most recent purchase price
+            });
+        }
+        
+        res.status(201).json(purchase);
     } catch (err) {
         return res.status(500).json({ error: err.message });
     }

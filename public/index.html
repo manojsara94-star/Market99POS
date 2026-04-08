@@ -126,6 +126,12 @@
                     </a>
                 </li>
                 <li>
+                    <a href="#" class="nav-link" data-target="purchases-view">
+                        <i class='bx bx-plus-circle icon'></i>
+                        <span class="link-name">Stock-In</span>
+                    </a>
+                </li>
+                <li>
                     <a href="#" class="nav-link" data-target="settings-view">
                         <i class='bx bx-cog icon'></i>
                         <span class="link-name">Settings</span>
@@ -262,6 +268,13 @@
                             <div class="stat-details">
                                 <h3>Monthly Expenses</h3>
                                 <p class="stat-value" id="dash-expenses-month">0.00</p>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon" style="background:#f59e0b;color:white;"><i class='bx bx-user-voice'></i></div>
+                            <div class="stat-details">
+                                <h3>Supplier Credit</h3>
+                                <p class="stat-value" id="dash-supplier-credit">0.00</p>
                             </div>
                         </div>
                         <div class="stat-card">
@@ -489,6 +502,39 @@
                                         <th>Contact No</th>
                                         <th>Address</th>
                                         <th>Note</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Purchases (Stock-In) View -->
+                <section id="purchases-view" class="view">
+                    <div class="view-header">
+                        <h2>Inventory Purchases (Stock-In)</h2>
+                        <div class="header-actions">
+                            <button class="btn btn-primary" id="btn-new-purchase">
+                                <i class='bx bx-plus'></i> New Stock Entry
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-card">
+                        <div class="table-responsive">
+                            <table class="data-table" id="purchases-table">
+                                <thead>
+                                    <tr>
+                                        <th>Purchase #</th>
+                                        <th>Date</th>
+                                        <th>Supplier</th>
+                                        <th>Amount</th>
+                                        <th>Paid</th>
+                                        <th>Balance</th>
+                                        <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -941,6 +987,77 @@
                         </div>
                         <button type="submit" class="btn btn-primary btn-block">Save Supplier Details</button>
                     </form>
+                </div>
+            </div>
+
+            <!-- Purchase (Stock-In) Modal -->
+            <div class="modal" id="purchase-modal" style="max-width:800px;">
+                <div class="modal-header">
+                    <h3>New Stock Entry (Purchase)</h3>
+                    <button class="close-btn" id="btn-close-purchase-modal"><i class='bx bx-x'></i></button>
+                </div>
+                <div class="modal-body">
+                    <div style="display:flex; gap:20px; margin-bottom:20px;">
+                        <div style="flex:1;">
+                            <label>Supplier</label>
+                            <select id="purchase-supplier" class="form-control" required></select>
+                        </div>
+                        <div style="flex:1;">
+                            <label>Date</label>
+                            <input type="date" id="purchase-date" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div style="background:var(--bg-light); padding:15px; border-radius:12px; margin-bottom:20px; border:1px solid var(--border);">
+                        <h4 style="margin-bottom:10px; font-size:14px;">Add Items to Purchase</h4>
+                        <div style="display:flex; gap:10px; align-items:flex-end;">
+                            <div style="flex:3;">
+                                <label style="font-size:12px;">Search Product</label>
+                                <input type="text" id="purchase-product-search" class="form-control" placeholder="Search by name..." list="purchase-prod-list">
+                                <datalist id="purchase-prod-list"></datalist>
+                            </div>
+                            <div style="flex:1;">
+                                <label style="font-size:12px;">Qty</label>
+                                <input type="number" id="purchase-qty" class="form-control" value="1" min="1">
+                            </div>
+                            <div style="flex:1;">
+                                <label style="font-size:12px;">Cost Price</label>
+                                <input type="number" id="purchase-cost" class="form-control" step="0.01">
+                            </div>
+                            <button class="btn btn-primary" id="btn-add-item-to-purchase" style="padding:10px 15px;"><i class='bx bx-plus'></i></button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive" style="max-height:250px; overflow-y:auto; margin-bottom:20px; border:1px solid var(--border); border-radius:8px;">
+                        <table class="data-table" id="purchase-items-table" style="font-size:13px;">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Qty</th>
+                                    <th>Cost</th>
+                                    <th>Subtotal</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+
+                    <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                        <div style="width:250px;">
+                            <div class="form-group" style="margin-bottom:10px;">
+                                <label>Amount Paid (Rs)</label>
+                                <input type="number" id="purchase-paid-amount" class="form-control" value="0" step="0.01">
+                            </div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:14px; color:var(--text-muted);">Total Purchase Amount</div>
+                            <div id="purchase-total-display" style="font-size:24px; font-weight:700; color:var(--primary);">Rs. 0.00</div>
+                            <div id="purchase-balance-display" style="font-size:13px; color:var(--danger); margin-top:5px; font-weight:500;">Balance: Rs. 0.00</div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary btn-block" id="btn-save-purchase" style="margin-top:20px;">Complete Stock Entry</button>
                 </div>
             </div>
         </div>

@@ -104,6 +104,27 @@ const SupplierSchema = new mongoose.Schema({
     note: { type: String, default: '' }
 });
 
+const PurchaseItemSchema = new mongoose.Schema({
+    product_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+    product_name: { type: String, required: true },
+    quantity: { type: Number, required: true },
+    cost: { type: Number, required: true },
+    subtotal: { type: Number, required: true }
+});
+
+const PurchaseSchema = new mongoose.Schema({
+    user_id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    purchase_number: { type: String, required: true },
+    supplier_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Supplier' },
+    supplier_name: { type: String },
+    date: { type: String, required: true }, // YYYY-MM-DD
+    total_amount: { type: Number, required: true },
+    paid_amount: { type: Number, default: 0 },
+    balance_amount: { type: Number, default: 0 },
+    payment_status: { type: String, enum: ['Paid', 'Partial', 'Credit'], default: 'Credit' },
+    items: [PurchaseItemSchema]
+});
+
 // -- MODELS --
 const User = mongoose.model('User', UserSchema);
 const Product = mongoose.model('Product', ProductSchema);
@@ -113,6 +134,7 @@ const Customer = mongoose.model('Customer', CustomerSchema);
 const Expense = mongoose.model('Expense', ExpenseSchema);
 
 const Supplier = mongoose.model('Supplier', SupplierSchema);
+const Purchase = mongoose.model('Purchase', PurchaseSchema);
 
 // Create default admin user
 const initializeDatabase = async () => {
@@ -144,5 +166,6 @@ module.exports = {
     Category,
     Customer,
     Expense,
-    Supplier
+    Supplier,
+    Purchase
 };
